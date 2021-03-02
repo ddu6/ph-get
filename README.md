@@ -74,10 +74,16 @@ npm install
 npm run init
 ```
 ```
-sudo cp /var/lib/mysql/*.pem secrets/mysql/
+sudo -s
 ```
 ```
-sudo chmod 777 secrets/mysql/*
+cp /var/lib/mysql/*.pem secrets/mysql/
+```
+```
+chmod 777 secrets/mysql/*
+```
+```
+exit
 ```
 Modify `config.json`. 
 
