@@ -1,0 +1,6 @@
+tmp
+node_modules
+secrets
+archive
+config.json
+nohup.out
