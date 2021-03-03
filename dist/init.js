@@ -26,7 +26,11 @@ if (!fs.existsSync(path5)) {
 if (!fs.existsSync(path2)) {
     fs.writeFileSync(path2, `{
     "server":{
-        "port":8080
+        "port":8080,
+        "proxies":[
+            "http://xx.xx.xx.xx:3128/"
+        ],
+        "password":"xxxxxxxx"
     },
     "mysql":{
         "host":"xxxxxxxx",

@@ -5,7 +5,7 @@ import * as path from 'path'
 import * as http from 'http'
 let maxId=0
 const oldCommentsThreshold=32859
-const {port}=JSON.parse(fs.readFileSync(path.join(__dirname,'../config.json'),{encoding:'utf8'})).server
+const {port,password}=JSON.parse(fs.readFileSync(path.join(__dirname,'../config.json'),{encoding:'utf8'})).server
 const server=http.createServer(async(req,res)=>{
     try{
         res.setHeader("Access-Control-Allow-Origin", "*")
@@ -17,6 +17,19 @@ const server=http.createServer(async(req,res)=>{
         const url=new URL(req.url,'https://pkuhelper.pku.edu.cn')
         const path0=decodeURIComponent(url.pathname)
         const params=url.searchParams
+        const password0=params.get('password')
+        if(password0===password){
+            if(path0==='/ip'){
+                const result=await origin.getIP()
+                if(typeof result==='number'){
+                    res.statusCode=result
+                    res.end()
+                    return
+                }
+                res.end(result)
+                return
+            }
+        }
         if(path0.startsWith('/local')){
             const path1=path0.slice(6)
             if(path1.startsWith('/ids')){

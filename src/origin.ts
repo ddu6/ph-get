@@ -1,4 +1,8 @@
+import * as fs from 'fs'
+import * as path from 'path'
 import * as https from 'https'
+import * as http from 'http'
+const proxies:string[]=JSON.parse(fs.readFileSync(path.join(__dirname,'../config.json'),{encoding:'utf8'})).server.proxies
 export interface HoleData{
     text:string|null|undefined
     tag:string|null|undefined
@@ -18,10 +22,22 @@ export interface CommentData{
     timestamp:number|string
     name:string|null|undefined
 }
-async function getResult(url:string){
+async function basicallyGetResult(url:string){
     const data=await new Promise((resolve:(val:string|number)=>void)=>{
         try{
-            const req=https.get(url,res=>{
+            const httpsOrHTTP=url.startsWith('https://')?https:http
+            let url0:string
+            let options:https.RequestOptions
+            if(proxies.length===0){
+                url0=url
+                options={}
+            }else{
+                const i=Math.min(Math.floor(Math.random()*proxies.length),proxies.length-1)
+                const proxy=proxies[i]
+                url0=proxy
+                options={path:url}
+            }
+            const req=httpsOrHTTP.get(url0,options,res=>{
                 if(res.statusCode===undefined){
                     resolve(500)
                     return
@@ -44,12 +60,20 @@ async function getResult(url:string){
             })
         }catch(err){console.log(err);resolve(500)}
     })
+    return data
+}
+async function getResult(url:string){
+    const data=await basicallyGetResult(url)
     if(typeof data!=='string')return data
     try{
         const json:{code:0|1,data:any}=JSON.parse(data)
         if(json.code!==0)return 404
         return {data:json.data}
     }catch(err){console.log(err);return 500}
+}
+export async function getIP(){
+    const result=await basicallyGetResult('http://ifconfig.me/all.json')
+    return result
 }
 export async function star(id:number|string,starred:boolean,token:string){
     const result=await getResult(`https://pkuhelper.pku.edu.cn/services/pkuhole/api.php?action=attention&pid=${id}&switch=${starred?'0':'1'}&PKUHelperAPI=3.0&jsapiver=201027113050-446530&user_token=${token}`)

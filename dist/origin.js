@@ -1,11 +1,28 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getPage = exports.getStars = exports.getHole = exports.getComments = exports.star = void 0;
+exports.getPage = exports.getStars = exports.getHole = exports.getComments = exports.star = exports.getIP = void 0;
+const fs = require("fs");
+const path = require("path");
 const https = require("https");
-async function getResult(url) {
+const http = require("http");
+const proxies = JSON.parse(fs.readFileSync(path.join(__dirname, '../config.json'), { encoding: 'utf8' })).server.proxies;
+async function basicallyGetResult(url) {
     const data = await new Promise((resolve) => {
         try {
-            const req = https.get(url, res => {
+            const httpsOrHTTP = url.startsWith('https://') ? https : http;
+            let url0;
+            let options;
+            if (proxies.length === 0) {
+                url0 = url;
+                options = {};
+            }
+            else {
+                const i = Math.min(Math.floor(Math.random() * proxies.length), proxies.length - 1);
+                const proxy = proxies[i];
+                url0 = proxy;
+                options = { path: url };
+            }
+            const req = httpsOrHTTP.get(url0, options, res => {
                 if (res.statusCode === undefined) {
                     resolve(500);
                     return;
@@ -32,6 +49,10 @@ async function getResult(url) {
             resolve(500);
         }
     });
+    return data;
+}
+async function getResult(url) {
+    const data = await basicallyGetResult(url);
     if (typeof data !== 'string')
         return data;
     try {
@@ -45,6 +66,11 @@ async function getResult(url) {
         return 500;
     }
 }
+async function getIP() {
+    const result = await basicallyGetResult('http://ifconfig.me/all.json');
+    return result;
+}
+exports.getIP = getIP;
 async function star(id, starred, token) {
     const result = await getResult(`https://pkuhelper.pku.edu.cn/services/pkuhole/api.php?action=attention&pid=${id}&switch=${starred ? '0' : '1'}&PKUHelperAPI=3.0&jsapiver=201027113050-446530&user_token=${token}`);
     if (typeof result === 'number')
