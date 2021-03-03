@@ -9,7 +9,6 @@ const proxies = JSON.parse(fs.readFileSync(path.join(__dirname, '../config.json'
 async function basicallyGetResult(url) {
     const data = await new Promise((resolve) => {
         try {
-            const httpsOrHTTP = url.startsWith('https://') ? https : http;
             let url0;
             let options;
             if (proxies.length === 0) {
@@ -22,6 +21,7 @@ async function basicallyGetResult(url) {
                 url0 = proxy;
                 options = { path: url };
             }
+            const httpsOrHTTP = url0.startsWith('https://') ? https : http;
             const req = httpsOrHTTP.get(url0, options, res => {
                 if (res.statusCode === undefined) {
                     resolve(500);

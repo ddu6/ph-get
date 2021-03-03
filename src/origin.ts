@@ -25,7 +25,6 @@ export interface CommentData{
 async function basicallyGetResult(url:string){
     const data=await new Promise((resolve:(val:string|number)=>void)=>{
         try{
-            const httpsOrHTTP=url.startsWith('https://')?https:http
             let url0:string
             let options:https.RequestOptions
             if(proxies.length===0){
@@ -37,6 +36,7 @@ async function basicallyGetResult(url:string){
                 url0=proxy
                 options={path:url}
             }
+            const httpsOrHTTP=url0.startsWith('https://')?https:http
             const req=httpsOrHTTP.get(url0,options,res=>{
                 if(res.statusCode===undefined){
                     resolve(500)
