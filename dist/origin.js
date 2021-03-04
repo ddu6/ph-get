@@ -23,12 +23,13 @@ async function basicallyGetResult(url) {
             }
             const httpsOrHTTP = url0.startsWith('https://') ? https : http;
             const req = httpsOrHTTP.get(url0, options, res => {
-                if (res.statusCode === undefined) {
+                const { statusCode } = res;
+                if (statusCode === undefined) {
                     resolve(500);
                     return;
                 }
-                if (res.statusCode !== 200) {
-                    resolve(res.statusCode);
+                if (statusCode !== 200) {
+                    resolve(statusCode);
                     return;
                 }
                 let data = '';
@@ -42,6 +43,9 @@ async function basicallyGetResult(url) {
                 res.on('end', () => {
                     resolve(data);
                 });
+            }).on('error', err => {
+                console.log(err);
+                resolve(500);
             });
         }
         catch (err) {
