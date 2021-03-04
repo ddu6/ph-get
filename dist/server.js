@@ -95,17 +95,17 @@ const server = http.createServer(async (req, res) => {
                     return;
                 }
                 if (pid > maxId) {
-                    res.end(JSON.stringify({
-                        text: '',
-                        tag: '',
-                        pid: pid,
-                        timestamp: 0,
-                        reply: 0,
-                        likenum: 0,
-                        type: 'text',
-                        url: '',
-                        hidden: 1
-                    }));
+                    res.end(JSON.stringify({ status: 200, data: {
+                            text: '',
+                            tag: '',
+                            pid: pid,
+                            timestamp: 0,
+                            reply: 0,
+                            likenum: 0,
+                            type: 'text',
+                            url: '',
+                            hidden: 1
+                        } }));
                     return;
                 }
                 const data = await local.getHole(pid);

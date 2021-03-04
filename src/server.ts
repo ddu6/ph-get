@@ -93,7 +93,7 @@ const server=http.createServer(async(req,res)=>{
                     return
                 }
                 if(pid>maxId){
-                    res.end(JSON.stringify({
+                    res.end(JSON.stringify({status:200,data:{
                         text:'',
                         tag:'',
                         pid:pid,
@@ -103,7 +103,7 @@ const server=http.createServer(async(req,res)=>{
                         type:'text',
                         url:'',
                         hidden:1
-                    }))
+                    }}))
                     return
                 }
                 const data=await local.getHole(pid)
