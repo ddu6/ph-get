@@ -1,4 +1,4 @@
-# PKU Hole Getter
+# PKU Holes Getter
 - Require `mysql8`, `nodejs`. 
 
 ## Prepare
