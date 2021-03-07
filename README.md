@@ -85,7 +85,7 @@ chmod 777 secrets/mysql/*
 ```
 exit
 ```
-Modify `config.json`. 
+Fill in `config.json`. 
 
 ## Start
 ```
