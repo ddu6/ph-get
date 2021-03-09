@@ -1,5 +1,5 @@
 # PKU Holes Getter
-- Require `mysql8`, `nodejs`. 
+- Require mysql8, nodejs. 
 
 ## Prepare
 ```
