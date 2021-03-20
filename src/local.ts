@@ -40,6 +40,18 @@ async function getResult(sen:string,vals:(string|number)[]){
     })
     return result
 }
+export async function getInfo(){
+    const result:{'max(pid)':number}[]|400|500=await getResult('select max(pid) from holes',[])
+    if(result===400||result===500||result.length!==1)return 500
+    const maxId=result[0]['max(pid)']
+    const cresult:{'max(cid)':number}[]|400|500=await getResult('select max(cid) from comments',[])
+    if(cresult===400||cresult===500||cresult.length!==1)return 500
+    const maxCId=cresult[0]['max(cid)']
+    return {
+        maxId:maxId,
+        maxCId:maxCId
+    }
+}
 export async function getIds(start:number,step=10000){
     start=start*step
     const result:{pid:number}[]|400|500=await getResult('select pid from holes where pid between ? and ? and timestamp!=0',[start+1,start+step])

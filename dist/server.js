@@ -33,6 +33,15 @@ const server = http.createServer(async (req, res) => {
         }
         if (path0.startsWith('/local')) {
             const path1 = path0.slice(6);
+            if (path1 === '/info') {
+                const data = await local.getInfo();
+                if (data === 500) {
+                    res.end(JSON.stringify({ status: 500 }));
+                    return;
+                }
+                res.end(JSON.stringify({ status: 200, data: data }));
+                return;
+            }
             if (path1.startsWith('/ids')) {
                 const start = Number(path1.slice(4));
                 if (isNaN(start)) {

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateComment = exports.updateHole = exports.emptyHole = exports.getPage = exports.getHole = exports.getOldComments = exports.getComments = exports.getCIds = exports.getIds = void 0;
+exports.updateComment = exports.updateHole = exports.emptyHole = exports.getPage = exports.getHole = exports.getOldComments = exports.getComments = exports.getCIds = exports.getIds = exports.getInfo = void 0;
 const fs = require("fs");
 const path = require("path");
 const https = require("https");
@@ -42,6 +42,21 @@ async function getResult(sen, vals) {
     });
     return result;
 }
+async function getInfo() {
+    const result = await getResult('select max(pid) from holes', []);
+    if (result === 400 || result === 500 || result.length !== 1)
+        return 500;
+    const maxId = result[0]['max(pid)'];
+    const cresult = await getResult('select max(cid) from comments', []);
+    if (cresult === 400 || cresult === 500 || cresult.length !== 1)
+        return 500;
+    const maxCId = cresult[0]['max(cid)'];
+    return {
+        maxId: maxId,
+        maxCId: maxCId
+    };
+}
+exports.getInfo = getInfo;
 async function getIds(start, step = 10000) {
     start = start * step;
     const result = await getResult('select pid from holes where pid between ? and ? and timestamp!=0', [start + 1, start + step]);
