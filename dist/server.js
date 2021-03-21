@@ -5,9 +5,10 @@ const local = require("./local");
 const fs = require("fs");
 const path = require("path");
 const http = require("http");
-let maxId = 0;
+let maxId = 100000;
 const oldCommentsThreshold = 32859;
 const { port, password } = JSON.parse(fs.readFileSync(path.join(__dirname, '../config.json'), { encoding: 'utf8' })).server;
+const tokenToExpirationTime = {};
 const server = http.createServer(async (req, res) => {
     try {
         res.setHeader("Access-Control-Allow-Origin", "*");
@@ -69,6 +70,21 @@ const server = http.createServer(async (req, res) => {
                 }
                 res.end(JSON.stringify({ status: 200, data: data }));
                 return;
+            }
+            const token = params.get('token');
+            if (typeof token !== 'string' || token.length !== 32) {
+                res.end(JSON.stringify({ status: 401 }));
+                return;
+            }
+            const now = Math.floor(Date.now() / 1000);
+            const expirationTime = tokenToExpirationTime[token];
+            if (expirationTime === undefined || expirationTime < now) {
+                const result = await origin.getHole(maxId, token);
+                if (typeof result === 'number') {
+                    res.end(JSON.stringify({ status: 401 }));
+                    return;
+                }
+                tokenToExpirationTime[token] = now + 2592000;
             }
             if (path1.startsWith('/c')) {
                 const pid = Number(path1.slice(2));
@@ -150,7 +166,7 @@ const server = http.createServer(async (req, res) => {
             return;
         }
         const token = params.get('token');
-        if (typeof token !== 'string' || token.length === 0) {
+        if (typeof token !== 'string' || token.length !== 32) {
             res.end(JSON.stringify({ status: 401 }));
             return;
         }
@@ -223,7 +239,7 @@ const server = http.createServer(async (req, res) => {
             if (result === 404) {
                 res.end(JSON.stringify({ status: 404 }));
                 if (params.has('update')) {
-                    const result = await origin.getHole(1309735, token);
+                    const result = await origin.getHole(maxId, token);
                     if (typeof result === 'number')
                         return;
                     await local.emptyHole(pid);
