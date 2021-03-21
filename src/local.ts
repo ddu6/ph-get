@@ -110,7 +110,7 @@ export async function emptyHole(id:number|string){
     const result1=await getResult('select hidden from holes where pid=? limit 1',[id])
     if(result1===400||result1===500)return 500
     if(result1.length===0){
-        const result2=await getResult('insert into holes (`pid`,`tag`,`timestamp`,`reply`,`likenum`,`text`,`type`,`url`,`etimestamp`,`hidden`) values (?,?,?,?,?,?,?,?,?,?)',[id,'',0,0,0,'','text','',0,1])
+        const result2=await getResult('insert into holes (`pid`,`tag`,`timestamp`,`reply`,`likenum`,`text`,`type`,`url`,`etimestamp`,`hidden`,`fulltext`) values (?,?,?,?,?,?,?,?,?,?,?)',[id,'',0,0,0,'','text','',0,1,id+'\n'])
         if(result2===400||result2===500)return 500
         return 200
     }
@@ -131,15 +131,15 @@ export async function updateHole(data:HoleData){
     else if(data.type==='audio'){
         if(archive)await updateAudio(data.url)
     }
-    const pid=Number(data.pid)
+    const id=Number(data.pid)
     const timestamp=Number(data.timestamp)
-    const result0=await getResult('select pid from holes where pid=?',[pid])
+    const result0=await getResult('select pid from holes where pid=?',[id])
     if(result0!==400&&result0!==500&&result0.length===1){
-        const result1=await getResult('update holes set tag=?,reply=?,likenum=? where pid=?',[data.tag,Number(data.reply),Number(data.likenum),pid])
+        const result1=await getResult('update holes set tag=?,reply=?,likenum=? where pid=?',[data.tag,Number(data.reply),Number(data.likenum),id])
         if(result1===400||result1===500)return 500
         return 200
     }
-    const result1=await getResult('replace into holes (`pid`,`tag`,`timestamp`,`reply`,`likenum`,`text`,`type`,`url`,`etimestamp`,`fulltext`) values (?,?,?,?,?,?,?,?,?,?)',[pid,data.tag,timestamp,Number(data.reply),Number(data.likenum),data.text,data.type,data.url,timestamp,pid.toString()+'\n'+data.text])
+    const result1=await getResult('replace into holes (`pid`,`tag`,`timestamp`,`reply`,`likenum`,`text`,`type`,`url`,`etimestamp`,`fulltext`) values (?,?,?,?,?,?,?,?,?,?)',[id,data.tag,timestamp,Number(data.reply),Number(data.likenum),data.text,data.type,data.url,timestamp,id+'\n'+data.text])
     if(result1===400||result1===500)return 500
     return 200
 }
