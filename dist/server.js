@@ -20,18 +20,6 @@ const server = http.createServer(async (req, res) => {
         const url = new URL(req.url, 'https://pkuhelper.pku.edu.cn');
         const path0 = decodeURIComponent(url.pathname);
         const params = url.searchParams;
-        const password0 = params.get('password');
-        if (password0 === password) {
-            if (path0 === '/ip') {
-                const result = await origin.getIP();
-                if (typeof result === 'number') {
-                    res.end(JSON.stringify({ status: result }));
-                    return;
-                }
-                res.end(`{"status":200,"data":${result}}`);
-                return;
-            }
-        }
         if (path0.startsWith('/local')) {
             const path1 = path0.slice(6);
             if (path1 === '/info') {
@@ -163,6 +151,20 @@ const server = http.createServer(async (req, res) => {
                 return;
             }
             res.end(JSON.stringify({ status: 400 }));
+            return;
+        }
+        const password0 = params.get('password');
+        if (password0 !== password) {
+            res.end(JSON.stringify({ status: 401 }));
+            return;
+        }
+        if (path0 === '/ip') {
+            const result = await origin.getIP();
+            if (typeof result === 'number') {
+                res.end(JSON.stringify({ status: result }));
+                return;
+            }
+            res.end(`{"status":200,"data":${result}}`);
             return;
         }
         const token = params.get('token');
