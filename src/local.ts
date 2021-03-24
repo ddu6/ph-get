@@ -53,14 +53,14 @@ export async function getInfo(){
     }
 }
 export async function getIds(start:number,step=10000){
-    start=start*step
-    const result:{pid:number}[]|400|500=await getResult('select pid from holes where pid between ? and ? and timestamp!=0',[start+1,start+step])
+    start*=step
+    const result:{pid:number}[]|400|500=await getResult('select pid from holes where pid between ? and ? and timestamp!=0',[start,start+step-1])
     if(result===400||result===500)return 500
     return result.map(val=>val.pid)
 }
 export async function getCIds(start:number,step=10000){
-    start=start*step
-    const result:{cid:number}[]|400|500=await getResult('select cid from comments where cid between ? and ?',[start+1,start+step])
+    start*=step
+    const result:{cid:number}[]|400|500=await getResult('select cid from comments where cid between ? and ?',[start,start+step-1])
     if(result===400||result===500)return 500
     return result.map(val=>val.cid)
 }
