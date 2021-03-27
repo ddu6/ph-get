@@ -5,7 +5,11 @@ import * as path from 'path'
 import * as http from 'http'
 let maxId=100000
 const oldCommentsThreshold=32859
-const {port,password}=JSON.parse(fs.readFileSync(path.join(__dirname,'../config.json'),{encoding:'utf8'})).server
+const config=JSON.parse(fs.readFileSync(path.join(__dirname,'../config.json'),{encoding:'utf8'})).server
+const port:number=config.number
+const passwords:string[]=config.passwords
+if(passwords.length===0)throw new Error('Please fill in passwords in config.json.')
+const password=passwords[0]
 const tokenToExpirationTime:Record<string,number>={}
 const server=http.createServer(async(req,res)=>{
     try{
@@ -18,7 +22,27 @@ const server=http.createServer(async(req,res)=>{
         const url=new URL(req.url,'https://pkuhelper.pku.edu.cn')
         const path0=decodeURIComponent(url.pathname)
         const params=url.searchParams
+        const password0=params.get('password')
+        if(password0===null||!passwords.includes(password0)){
+            res.end(JSON.stringify({status:401}))
+            return
+        }
+        const token=params.get('token')
+        if(typeof token!=='string'||token.length!==32){
+            res.end(JSON.stringify({status:401}))
+            return
+        }
         if(path0.startsWith('/local')){
+            const now=Math.floor(Date.now()/1000)
+            const expirationTime=tokenToExpirationTime[token]
+            if(expirationTime===undefined||expirationTime<now){
+                const result=await origin.getHole(maxId,token)
+                if(typeof result==='number'){
+                    res.end(JSON.stringify({status:401}))
+                    return
+                }
+                tokenToExpirationTime[token]=now+2592000
+            }
             const path1=path0.slice(6)
             if(path1==='/info'){
                 const data=await local.getInfo()
@@ -56,21 +80,6 @@ const server=http.createServer(async(req,res)=>{
                 }
                 res.end(JSON.stringify({status:200,data:data}))
                 return
-            }
-            const token=params.get('token')
-            if(typeof token!=='string'||token.length!==32){
-                res.end(JSON.stringify({status:401}))
-                return
-            }
-            const now=Math.floor(Date.now()/1000)
-            const expirationTime=tokenToExpirationTime[token]
-            if(expirationTime===undefined||expirationTime<now){
-                const result=await origin.getHole(maxId,token)
-                if(typeof result==='number'){
-                    res.end(JSON.stringify({status:401}))
-                    return
-                }
-                tokenToExpirationTime[token]=now+2592000
             }
             if(path1.startsWith('/c')){
                 const pid=Number(path1.slice(2))
@@ -151,7 +160,6 @@ const server=http.createServer(async(req,res)=>{
             res.end(JSON.stringify({status:400}))
             return
         }
-        const password0=params.get('password')
         if(password0!==password){
             res.end(JSON.stringify({status:401}))
             return
@@ -163,11 +171,6 @@ const server=http.createServer(async(req,res)=>{
                 return
             }
             res.end(`{"status":200,"data":${result}}`)
-            return
-        }
-        const token=params.get('token')
-        if(typeof token!=='string'||token.length!==32){
-            res.end(JSON.stringify({status:401}))
             return
         }
         if(path0==='/s'){

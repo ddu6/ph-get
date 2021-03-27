@@ -30,7 +30,9 @@ if (!fs.existsSync(path2)) {
         "proxies":[
             "http://xx.xx.xx.xx:3128/"
         ],
-        "password":"xxxxxxxx"
+        "passwords":[
+            "xxxxxxxx"
+        ]
     },
     "mysql":{
         "host":"xxxxxxxx",
