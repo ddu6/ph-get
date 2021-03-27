@@ -8,7 +8,7 @@ const http = require("http");
 let maxId = 100000;
 const oldCommentsThreshold = 32859;
 const config = JSON.parse(fs.readFileSync(path.join(__dirname, '../config.json'), { encoding: 'utf8' })).server;
-const port = config.number;
+const port = config.port;
 const passwords = config.passwords;
 if (passwords.length === 0)
     throw new Error('Please fill in passwords in config.json.');

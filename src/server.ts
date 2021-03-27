@@ -6,7 +6,7 @@ import * as http from 'http'
 let maxId=100000
 const oldCommentsThreshold=32859
 const config=JSON.parse(fs.readFileSync(path.join(__dirname,'../config.json'),{encoding:'utf8'})).server
-const port:number=config.number
+const port:number=config.port
 const passwords:string[]=config.passwords
 if(passwords.length===0)throw new Error('Please fill in passwords in config.json.')
 const password=passwords[0]
