@@ -59,7 +59,7 @@ async function getInfo() {
 exports.getInfo = getInfo;
 async function getIds(start, step = 10000) {
     start *= step;
-    const result = await getResult('select pid from holes where pid between ? and ? and timestamp!=0', [start, start + step - 1]);
+    const result = await getResult('select pid from holes where pid between ? and ?', [start, start + step - 1]);
     if (result === 400 || result === 500)
         return 500;
     return result.map(val => val.pid);
