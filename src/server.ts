@@ -27,12 +27,12 @@ const server=http.createServer(async(req,res)=>{
             res.end(JSON.stringify({status:401}))
             return
         }
-        const token=params.get('token')
-        if(typeof token!=='string'||token.length!==32){
-            res.end(JSON.stringify({status:401}))
-            return
-        }
         if(path0.startsWith('/local')){
+            const token=params.get('token')
+            if(typeof token!=='string'||token.length!==32){
+                res.end(JSON.stringify({status:401}))
+                return
+            }
             const now=Math.floor(Date.now()/1000)
             const expirationTime=tokenToExpirationTime[token]
             if(expirationTime===undefined||expirationTime<now){
@@ -171,6 +171,11 @@ const server=http.createServer(async(req,res)=>{
                 return
             }
             res.end(`{"status":200,"data":${result}}`)
+            return
+        }
+        const token=params.get('token')
+        if(typeof token!=='string'||token.length!==32){
+            res.end(JSON.stringify({status:401}))
             return
         }
         if(path0==='/s'){
