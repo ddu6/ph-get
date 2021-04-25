@@ -239,7 +239,7 @@ const server=http.createServer(async(req,res)=>{
                 res.end(JSON.stringify({status:400}))
                 return
             }
-            if(pid>maxId){
+            if(pid>maxId||pid<=oldCommentsThreshold){
                 res.end(JSON.stringify({status:404}))
                 return
             }
