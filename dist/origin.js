@@ -10,20 +10,30 @@ const init_1 = require("./init");
 Object.assign(init_1.config, JSON.parse(fs.readFileSync(path.join(__dirname, '../config.json'), { encoding: 'utf8' })));
 async function basicallyGet(url, params = {}, form = {}, cookie = '', referer = '') {
     let paramsStr = new URL(url).searchParams.toString();
-    if (paramsStr.length > 0)
+    if (paramsStr.length > 0) {
         paramsStr += '&';
+    }
     paramsStr += new URLSearchParams(params).toString();
-    if (paramsStr.length > 0)
+    if (paramsStr.length > 0) {
         paramsStr = '?' + paramsStr;
+    }
     url = new URL(paramsStr, url).href;
     const formStr = new URLSearchParams(form).toString();
     const headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36'
     };
-    if (cookie.length > 0)
+    if (cookie.length > 0) {
         headers.Cookie = cookie;
-    if (referer.length > 0)
+    }
+    if (referer.length > 0) {
         headers.Referer = referer;
+    }
+    if (formStr.length > 0) {
+        Object.assign(headers, {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+        });
+    }
     const options = {
         method: formStr.length > 0 ? 'POST' : 'GET',
         headers: headers
@@ -96,7 +106,7 @@ async function basicallyGet(url, params = {}, form = {}, cookie = '', referer = 
 async function getResult(params = {}, form = {}) {
     Object.assign(params, {
         PKUHelperAPI: '3.0',
-        jsapiver: '201027113050-449840'
+        jsapiver: '201027113050-449842'
     });
     const result = await basicallyGet('https://pkuhelper.pku.edu.cn/services/pkuhole/api.php', params, form);
     if (typeof result === 'number')
@@ -110,6 +120,9 @@ async function getResult(params = {}, form = {}) {
             return { data: data };
         if (msg === '没有这条树洞')
             return 404;
+        if (typeof msg === 'string' && msg.length > 0) {
+            mod_1.semilog(msg);
+        }
     }
     catch (err) {
         mod_1.semilog(err);
@@ -191,7 +204,6 @@ exports.getPage = getPage;
 async function comment(id, text, token) {
     const result = await getResult({
         action: 'docomment',
-        pid: id.toString(),
         user_token: token
     }, {
         pid: id.toString(),

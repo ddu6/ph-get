@@ -2,5 +2,6 @@ tmp
 node_modules
 secrets
 archive
+info
 config.json
 nohup.out

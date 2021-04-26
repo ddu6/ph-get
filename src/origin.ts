@@ -33,16 +33,30 @@ export interface CommentData{
 }
 async function basicallyGet(url:string,params:Record<string,string>={},form:Record<string,string>={},cookie='',referer=''){
     let paramsStr=new URL(url).searchParams.toString()
-    if(paramsStr.length>0)paramsStr+='&'
+    if(paramsStr.length>0){
+        paramsStr+='&'
+    }
     paramsStr+=new URLSearchParams(params).toString()
-    if(paramsStr.length>0)paramsStr='?'+paramsStr
+    if(paramsStr.length>0){
+        paramsStr='?'+paramsStr
+    }
     url=new URL(paramsStr,url).href
     const formStr=new URLSearchParams(form).toString()
     const headers:http.OutgoingHttpHeaders={
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36'
     }
-    if(cookie.length>0)headers.Cookie=cookie
-    if(referer.length>0)headers.Referer=referer
+    if(cookie.length>0){
+        headers.Cookie=cookie
+    }
+    if(referer.length>0){
+        headers.Referer=referer
+    }
+    if(formStr.length>0){
+        Object.assign(headers,{
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+        })
+    }
     const options:https.RequestOptions={
         method:formStr.length>0?'POST':'GET',
         headers:headers
@@ -113,7 +127,7 @@ async function basicallyGet(url:string,params:Record<string,string>={},form:Reco
 async function getResult(params:Record<string,string>={},form:Record<string,string>={}){
     Object.assign(params,{
         PKUHelperAPI:'3.0',
-        jsapiver:'201027113050-449840'
+        jsapiver:'201027113050-449842'
     })
     const result=await basicallyGet('https://pkuhelper.pku.edu.cn/services/pkuhole/api.php',params,form)
     if(typeof result==='number')return result
@@ -123,6 +137,9 @@ async function getResult(params:Record<string,string>={},form:Record<string,stri
         const {code,data,msg}=JSON.parse(body)
         if(code===0)return {data:data}
         if(msg==='没有这条树洞')return 404
+        if(typeof msg==='string'&&msg.length>0){
+            semilog(msg)
+        }
     }catch(err){
         semilog(err)
     }
@@ -193,7 +210,6 @@ export async function getPage(key:string,page:number|string,token:string){
 export async function comment(id:number|string,text:string,token:string){
     const result=await getResult({
         action:'docomment',
-        pid:id.toString(),
         user_token:token
     },{
         pid:id.toString(),
