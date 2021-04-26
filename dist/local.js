@@ -115,7 +115,7 @@ async function getPage(key, page, order, s, e) {
     }
     const conditionStr = conditions.map(val => val.join(' and ')).join(' or ');
     vals.push((page - 1) * 50);
-    const result = await getResult(`select hidden,likenum,pid,reply,tag,text,timestamp,type,url from holes ${conditionStr.length > 0 ? 'where ' : ''}${conditionStr} order by ${order === 'hot' ? 'reply desc,likenum desc,' : ''}${order === 'active' ? 'etimestamp desc,cid desc,' : ''}pid desc limit ?,50`, vals);
+    const result = await getResult(`select etimestamp,hidden,likenum,pid,reply,tag,text,timestamp,type,url from holes ${conditionStr.length > 0 ? 'where ' : ''}${conditionStr} order by ${order === 'hot' ? 'reply desc,likenum desc,' : ''}${order === 'active' ? 'etimestamp desc,cid desc,' : ''}pid desc limit ?,50`, vals);
     if (result === 400 || result === 500)
         return 500;
     return result;
