@@ -2,7 +2,16 @@ import * as fs from 'fs'
 import * as path from 'path'
 import * as https from 'https'
 import * as http from 'http'
-const proxies:string[]=JSON.parse(fs.readFileSync(path.join(__dirname,'../config.json'),{encoding:'utf8'})).server.proxies
+import {semilog} from './mod'
+import {config} from './init'
+Object.assign(config,JSON.parse(fs.readFileSync(path.join(__dirname,'../config.json'),{encoding:'utf8'})))
+interface Res{
+    body:string
+    buffer:Buffer
+    cookie:string
+    headers:http.IncomingHttpHeaders
+    status:number
+}
 export interface HoleData{
     text:string|null|undefined
     tag:string|null|undefined
@@ -22,92 +31,175 @@ export interface CommentData{
     timestamp:number|string
     name:string|null|undefined
 }
-async function basicallyGetResult(url:string){
-    const data=await new Promise((resolve:(val:string|number)=>void)=>{
-        try{
-            let url0:string
-            let options:https.RequestOptions
-            if(proxies.length===0){
-                url0=url
-                options={}
-            }else{
-                const i=Math.min(Math.floor(Math.random()*proxies.length),proxies.length-1)
-                const proxy=proxies[i]
-                url0=proxy
-                options={path:url}
+async function basicallyGet(url:string,params:Record<string,string>={},form:Record<string,string>={},cookie='',referer=''){
+    let paramsStr=new URL(url).searchParams.toString()
+    if(paramsStr.length>0)paramsStr+='&'
+    paramsStr+=new URLSearchParams(params).toString()
+    if(paramsStr.length>0)paramsStr='?'+paramsStr
+    url=new URL(paramsStr,url).href
+    const formStr=new URLSearchParams(form).toString()
+    const headers:http.OutgoingHttpHeaders={
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36'
+    }
+    if(cookie.length>0)headers.Cookie=cookie
+    if(referer.length>0)headers.Referer=referer
+    const options:https.RequestOptions={
+        method:formStr.length>0?'POST':'GET',
+        headers:headers
+    }
+    const proxies=config.proxies
+    if(proxies.length>0){
+        const i=Math.min(Math.floor(Math.random()*proxies.length),proxies.length-1)
+        const proxy=proxies[i]
+        options.path=url
+        url=proxy
+    }
+    const result=await new Promise((resolve:(val:number|Res)=>void)=>{
+        setTimeout(()=>{
+            resolve(500)
+        },config.timeout*1000)
+        const httpsOrHTTP=url.startsWith('https://')?https:http
+        const req=httpsOrHTTP.request(url,options,async res=>{
+            const {statusCode}=res
+            if(statusCode===undefined){
+                resolve(500)
+                return
             }
-            const httpsOrHTTP=url0.startsWith('https://')?https:http
-            const req=httpsOrHTTP.get(url0,options,res=>{
-                const {statusCode}=res
-                if(statusCode===undefined){
-                    resolve(500)
-                    return
+            if(statusCode>=400){
+                resolve(statusCode)
+                return
+            }
+            let cookie:string
+            const cookie0=res.headers["set-cookie"]
+            if(cookie0===undefined){
+                cookie=''
+            }else{
+                cookie=cookie0.map(val=>val.split(';')[0]).join('; ')
+            }
+            let body=''
+            const buffers:Buffer[]=[]
+            res.on('data',chunk=>{
+                if(typeof chunk==='string'){
+                    body+=chunk
+                }else if(chunk instanceof Buffer){
+                    body+=chunk
+                    buffers.push(chunk)
                 }
-                if(statusCode!==200){
-                    resolve(statusCode)
-                    return
-                }
-                let data=''
-                res.on('error',err=>{
-                    console.log(err)
-                    resolve(500)
+            })
+            res.on('end',()=>{
+                resolve({
+                    body:body,
+                    buffer:Buffer.concat(buffers),
+                    cookie:cookie,
+                    headers:res.headers,
+                    status:statusCode
                 })
-                res.on('data',chunk=>{
-                    data+=chunk
-                })
-                res.on('end',()=>{
-                    resolve(data)
-                })
-            }).on('error',err=>{
-                console.log(err)
+            })
+            res.on('error',err=>{
+                semilog(err)
                 resolve(500)
             })
-        }catch(err){
-            console.log(err)
+        }).on('error',err=>{
+            semilog(err)
             resolve(500)
+        })
+        if(formStr.length>0){
+            req.write(formStr)
         }
+        req.end()
     })
-    return data
-}
-async function getResult(url:string){
-    const data=await basicallyGetResult(url)
-    if(typeof data!=='string')return data
-    try{
-        const json:{code:0|1,data:any}=JSON.parse(data)
-        if(json.code!==0)return 404
-        return {data:json.data}
-    }catch(err){console.log(err);return 500}
-}
-export async function getIP(){
-    const result=await basicallyGetResult('http://ifconfig.me/all.json')
     return result
 }
+async function getResult(params:Record<string,string>={},form:Record<string,string>={}){
+    Object.assign(params,{
+        PKUHelperAPI:'3.0',
+        jsapiver:'201027113050-449840'
+    })
+    const result=await basicallyGet('https://pkuhelper.pku.edu.cn/services/pkuhole/api.php',params,form)
+    if(typeof result==='number')return result
+    const {status,body}=result
+    if(status!==200)return status
+    try{
+        const {code,data,msg}=JSON.parse(body)
+        if(code===0)return {data:data}
+        if(msg==='没有这条树洞')return 404
+    }catch(err){
+        semilog(err)
+    }
+    return 500
+}
+export async function getIP(){
+    const result=await basicallyGet('http://ifconfig.me/all.json')
+    if(typeof result==='number')return result
+    const {status,body}=result
+    if(status!==200)return status
+    return body
+}
 export async function star(id:number|string,starred:boolean,token:string){
-    const result=await getResult(`https://pkuhelper.pku.edu.cn/services/pkuhole/api.php?action=attention&pid=${id}&switch=${starred?'0':'1'}&PKUHelperAPI=3.0&jsapiver=201027113050-446530&user_token=${token}`)
+    const result=await getResult({
+        action:'attention',
+        pid:id.toString(),
+        switch:starred?'0':'1',
+        user_token:token
+    })
     if(typeof result==='number')return result
     return 200
 }
 async function getList(page:number|string,token:string){
-    const result:{data:HoleData[]}|number=await getResult(`https://pkuhelper.pku.edu.cn/services/pkuhole/api.php?action=getlist&p=${page}&PKUHelperAPI=3.0&jsapiver=201027113050-446532&user_token=${token}`)
+    const result:{data:HoleData[]}|number=await getResult({
+        action:'getlist',
+        p:page.toString(),
+        user_token:token
+    })
     return result
 }
 export async function getComments(id:number|string,token:string){
-    const result:{data:CommentData[]}|number=await getResult(`https://pkuhelper.pku.edu.cn/services/pkuhole/api.php?action=getcomment&pid=${id}&PKUHelperAPI=3.0&jsapiver=201027113050-446532&user_token=${token}`)
+    const result:{data:CommentData[]}|number=await getResult({
+        action:'getcomment',
+        pid:id.toString(),
+        user_token:token
+    })
     return result
 }
 export async function getHole(id:number|string,token:string){
-    const result:{data:HoleData}|number=await getResult(`https://pkuhelper.pku.edu.cn/services/pkuhole/api.php?action=getone&pid=${id}&PKUHelperAPI=3.0&jsapiver=201027113050-446532&user_token=${token}`)
+    const result:{data:HoleData}|number=await getResult({
+        action:'getone',
+        pid:id.toString(),
+        user_token:token
+    })
     return result
 }
 async function getSearch(key:string,page:number|string,token:string){
-    const result:{data:HoleData[]}|number=await getResult(`https://pkuhelper.pku.edu.cn/services/pkuhole/api.php?action=search&pagesize=50&page=${page}&keywords=${encodeURIComponent(key)}&PKUHelperAPI=3.0&jsapiver=201027113050-446532&user_token=${token}`)
+    const result:{data:HoleData[]}|number=await getResult({
+        action:'search',
+        pagesize:'50',
+        page:page.toString(),
+        keywords:key,
+        user_token:token
+    })
     return result
 }
 export async function getStars(token:string){
-    const result:{data:HoleData[]}|number=await getResult(`https://pkuhelper.pku.edu.cn/services/pkuhole/api.php?action=getattention&PKUHelperAPI=3.0&jsapiver=201027113050-446532&user_token=${token}`)
+    const result:{data:HoleData[]}|number=await getResult({
+        action:'getattention',
+        user_token:token
+    })
     return result
 }
 export async function getPage(key:string,page:number|string,token:string){
     if(key.length===0)return await getList(page,token)
     return await getSearch(key,page,token)
+}
+export async function comment(id:number|string,text:string,token:string){
+    const result=await getResult({
+        action:'docomment',
+        pid:id.toString(),
+        user_token:token
+    },{
+        pid:id.toString(),
+        text:text,
+        user_token:token
+    })
+    if(typeof result==='number')return result
+    return 200
 }

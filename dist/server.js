@@ -5,271 +5,141 @@ const local = require("./local");
 const fs = require("fs");
 const path = require("path");
 const http = require("http");
+const init_1 = require("./init");
+Object.assign(init_1.config, JSON.parse(fs.readFileSync(path.join(__dirname, '../config.json'), { encoding: 'utf8' })));
 let maxId = 100000;
 const oldCommentsThreshold = 32859;
-const config = JSON.parse(fs.readFileSync(path.join(__dirname, '../config.json'), { encoding: 'utf8' })).server;
-const port = config.port;
-const passwords = config.passwords;
+const passwords = init_1.config.passwords;
 if (passwords.length === 0)
     throw new Error('Please fill in passwords in config.json.');
 const password = passwords[0];
 const tokenToExpirationTime = {};
 const server = http.createServer(async (req, res) => {
-    try {
-        res.setHeader("Access-Control-Allow-Origin", "*");
-        res.setHeader("Content-Type", "application/json;charset=utf-8");
-        if (req.method !== 'GET' && req.method !== 'POST' || req.url === undefined) {
-            res.end();
-            return;
-        }
-        const url = new URL(req.url, 'https://pkuhelper.pku.edu.cn');
-        const path0 = decodeURIComponent(url.pathname);
-        const params = url.searchParams;
-        const password0 = params.get('password');
-        if (password0 === null || !passwords.includes(password0)) {
-            res.end(JSON.stringify({ status: 401 }));
-            return;
-        }
-        if (path0.startsWith('/local')) {
-            const token = params.get('token');
-            if (typeof token !== 'string' || token.length !== 32) {
-                res.end(JSON.stringify({ status: 401 }));
-                return;
-            }
-            const now = Math.floor(Date.now() / 1000);
-            const expirationTime = tokenToExpirationTime[token];
-            if (expirationTime === undefined || expirationTime < now) {
-                const result = await origin.getHole(maxId, token);
-                if (typeof result === 'number') {
-                    res.end(JSON.stringify({ status: 401 }));
-                    return;
-                }
-                tokenToExpirationTime[token] = now + 2592000;
-            }
-            const path1 = path0.slice(6);
-            if (path1 === '/info') {
-                const data = await local.getInfo();
-                if (data === 500) {
-                    res.end(JSON.stringify({ status: 500 }));
-                    return;
-                }
-                res.end(JSON.stringify({ status: 200, data: data }));
-                return;
-            }
-            if (path1.startsWith('/ids')) {
-                const start = Number(path1.slice(4));
-                if (isNaN(start)) {
-                    res.end(JSON.stringify({ status: 400 }));
-                    return;
-                }
-                const data = await local.getIds(start);
-                if (data === 500) {
-                    res.end(JSON.stringify({ status: 500 }));
-                    return;
-                }
-                res.end(JSON.stringify({ status: 200, data: data }));
-                return;
-            }
-            if (path1.startsWith('/cids')) {
-                const start = Number(path1.slice(5));
-                if (isNaN(start)) {
-                    res.end(JSON.stringify({ status: 400 }));
-                    return;
-                }
-                const data = await local.getCIds(start);
-                if (data === 500) {
-                    res.end(JSON.stringify({ status: 500 }));
-                    return;
-                }
-                res.end(JSON.stringify({ status: 200, data: data }));
-                return;
-            }
-            if (path1.startsWith('/c')) {
-                const pid = Number(path1.slice(2));
-                if (isNaN(pid)) {
-                    res.end(JSON.stringify({ status: 400 }));
-                    return;
-                }
-                if (pid > maxId) {
-                    res.end(JSON.stringify({ status: 200, data: [] }));
-                    return;
-                }
-                if (pid <= oldCommentsThreshold) {
-                    const data = await local.getOldComments(pid);
-                    if (data === 500) {
-                        res.end(JSON.stringify({ status: 500 }));
-                        return;
-                    }
-                    res.end(JSON.stringify({ status: 200, data: data }));
-                    return;
-                }
-                const data = await local.getComments(pid);
-                if (data === 500) {
-                    res.end(JSON.stringify({ status: 500 }));
-                    return;
-                }
-                res.end(JSON.stringify({ status: 200, data: data }));
-                return;
-            }
-            if (path1.startsWith('/h')) {
-                const pid = Number(path1.slice(2));
-                if (isNaN(pid)) {
-                    res.end(JSON.stringify({ status: 400 }));
-                    return;
-                }
-                if (pid > maxId) {
-                    res.end(JSON.stringify({ status: 200, data: {
-                            text: '',
-                            tag: '',
-                            pid: pid,
-                            timestamp: 0,
-                            reply: 0,
-                            likenum: 0,
-                            type: 'text',
-                            url: '',
-                            hidden: 1
-                        } }));
-                    return;
-                }
-                const data = await local.getHole(pid);
-                if (data === 500 || data === 404) {
-                    res.end(JSON.stringify({ status: data }));
-                    return;
-                }
-                res.end(JSON.stringify({ status: 200, data: data }));
-                return;
-            }
-            if (path1.startsWith('/p')) {
-                const page = Number(path1.slice(2));
-                if (isNaN(page)) {
-                    res.end(JSON.stringify({ status: 400 }));
-                    return;
-                }
-                let key = params.get('key');
-                if (typeof key !== 'string') {
-                    key = '';
-                }
-                const order = params.get('order');
-                const s = Number(params.get('s'));
-                const e = Number(params.get('e'));
-                const data = await local.getPage(key, page, order, s, e);
-                if (data === 500) {
-                    res.end(JSON.stringify({ status: 500 }));
-                    return;
-                }
-                res.end(JSON.stringify({ status: 200, data: data }));
-                return;
-            }
-            res.end(JSON.stringify({ status: 400 }));
-            return;
-        }
-        if (password0 !== password) {
-            res.end(JSON.stringify({ status: 401 }));
-            return;
-        }
-        if (path0 === '/ip') {
-            const result = await origin.getIP();
-            if (typeof result === 'number') {
-                res.end(JSON.stringify({ status: result }));
-                return;
-            }
-            res.end(`{"status":200,"data":${result}}`);
-            return;
-        }
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Content-Type", "application/json;charset=utf-8");
+    if (req.method !== 'GET' && req.method !== 'POST' || req.url === undefined) {
+        res.end();
+        return;
+    }
+    const url = new URL(req.url, 'https://pkuhelper.pku.edu.cn');
+    const path0 = decodeURIComponent(url.pathname);
+    const params = url.searchParams;
+    const password0 = params.get('password');
+    if (password0 === null || !passwords.includes(password0)) {
+        res.end(JSON.stringify({ status: 401 }));
+        return;
+    }
+    if (path0.startsWith('/local')) {
         const token = params.get('token');
         if (typeof token !== 'string' || token.length !== 32) {
             res.end(JSON.stringify({ status: 401 }));
             return;
         }
-        if (path0 === '/s') {
-            const result = await origin.getStars(token);
+        const now = Math.floor(Date.now() / 1000);
+        const expirationTime = tokenToExpirationTime[token];
+        if (expirationTime === undefined || expirationTime < now) {
+            const result = await origin.getHole(maxId, token);
             if (typeof result === 'number') {
-                res.end(JSON.stringify({ status: result }));
+                res.end(JSON.stringify({ status: 401 }));
                 return;
             }
-            const data = result.data;
-            res.end(JSON.stringify({ status: 200, data: data }));
-            if (params.has('update')) {
-                for (let i = 0; i < data.length; i++) {
-                    const item = data[i];
-                    await local.updateHole(item);
-                }
+            tokenToExpirationTime[token] = now + 2592000;
+        }
+        const path1 = path0.slice(6);
+        if (path1 === '/info') {
+            const data = await local.getInfo();
+            if (data === 500) {
+                res.end(JSON.stringify({ status: 500 }));
+                return;
             }
+            res.end(JSON.stringify({ status: 200, data: data }));
             return;
         }
-        if (path0.startsWith('/s')) {
-            const pid = Number(path0.slice(2));
+        if (path1.startsWith('/ids')) {
+            const start = Number(path1.slice(4));
+            if (isNaN(start)) {
+                res.end(JSON.stringify({ status: 400 }));
+                return;
+            }
+            const data = await local.getIds(start);
+            if (data === 500) {
+                res.end(JSON.stringify({ status: 500 }));
+                return;
+            }
+            res.end(JSON.stringify({ status: 200, data: data }));
+            return;
+        }
+        if (path1.startsWith('/cids')) {
+            const start = Number(path1.slice(5));
+            if (isNaN(start)) {
+                res.end(JSON.stringify({ status: 400 }));
+                return;
+            }
+            const data = await local.getCIds(start);
+            if (data === 500) {
+                res.end(JSON.stringify({ status: 500 }));
+                return;
+            }
+            res.end(JSON.stringify({ status: 200, data: data }));
+            return;
+        }
+        if (path1.startsWith('/c')) {
+            const pid = Number(path1.slice(2));
             if (isNaN(pid)) {
                 res.end(JSON.stringify({ status: 400 }));
                 return;
             }
             if (pid > maxId) {
-                res.end(JSON.stringify({ status: 404 }));
+                res.end(JSON.stringify({ status: 200, data: [] }));
                 return;
             }
-            const result = await origin.star(pid, params.has('starred'), token);
-            res.end(JSON.stringify({ status: result }));
+            if (pid <= oldCommentsThreshold) {
+                const data = await local.getOldComments(pid);
+                if (data === 500) {
+                    res.end(JSON.stringify({ status: 500 }));
+                    return;
+                }
+                res.end(JSON.stringify({ status: 200, data: data }));
+                return;
+            }
+            const data = await local.getComments(pid);
+            if (data === 500) {
+                res.end(JSON.stringify({ status: 500 }));
+                return;
+            }
+            res.end(JSON.stringify({ status: 200, data: data }));
             return;
         }
-        if (path0.startsWith('/c')) {
-            const pid = Number(path0.slice(2));
+        if (path1.startsWith('/h')) {
+            const pid = Number(path1.slice(2));
             if (isNaN(pid)) {
                 res.end(JSON.stringify({ status: 400 }));
                 return;
             }
-            if (pid > maxId || pid <= oldCommentsThreshold) {
-                res.end(JSON.stringify({ status: 404 }));
+            if (pid > maxId) {
+                res.end(JSON.stringify({ status: 200, data: {
+                        text: '',
+                        tag: '',
+                        pid: pid,
+                        timestamp: 0,
+                        reply: 0,
+                        likenum: 0,
+                        type: 'text',
+                        url: '',
+                        hidden: 1
+                    } }));
                 return;
             }
-            const result = await origin.getComments(pid, token);
-            if (typeof result === 'number') {
-                res.end(JSON.stringify({ status: result }));
+            const data = await local.getHole(pid);
+            if (data === 500 || data === 404) {
+                res.end(JSON.stringify({ status: data }));
                 return;
             }
-            const data = result.data;
             res.end(JSON.stringify({ status: 200, data: data }));
-            if (params.has('update')) {
-                for (let i = 0; i < data.length; i++) {
-                    const item = data[i];
-                    await local.updateComment(item);
-                }
-            }
             return;
         }
-        if (path0.startsWith('/h')) {
-            const pid = Number(path0.slice(2));
-            if (isNaN(pid)) {
-                res.end(JSON.stringify({ status: 400 }));
-                return;
-            }
-            if (pid > maxId || pid <= oldCommentsThreshold) {
-                res.end(JSON.stringify({ status: 404 }));
-                return;
-            }
-            const result = await origin.getHole(pid, token);
-            if (result === 404) {
-                res.end(JSON.stringify({ status: 404 }));
-                if (params.has('update')) {
-                    const result = await origin.getHole(maxId, token);
-                    if (typeof result === 'number')
-                        return;
-                    await local.emptyHole(pid);
-                }
-                return;
-            }
-            if (typeof result === 'number') {
-                res.end(JSON.stringify({ status: result }));
-                return;
-            }
-            const data = result.data;
-            res.end(JSON.stringify({ status: 200, data: data }));
-            if (params.has('update')) {
-                await local.updateHole(data);
-            }
-            return;
-        }
-        if (path0.startsWith('/p')) {
-            const page = Number(path0.slice(2));
+        if (path1.startsWith('/p')) {
+            const page = Number(path1.slice(2));
             if (isNaN(page)) {
                 res.end(JSON.stringify({ status: 400 }));
                 return;
@@ -278,30 +148,161 @@ const server = http.createServer(async (req, res) => {
             if (typeof key !== 'string') {
                 key = '';
             }
-            const result = await origin.getPage(key, page, token);
-            if (typeof result === 'number') {
-                res.end(JSON.stringify({ status: result }));
+            const order = params.get('order');
+            const s = Number(params.get('s'));
+            const e = Number(params.get('e'));
+            const data = await local.getPage(key, page, order, s, e);
+            if (data === 500) {
+                res.end(JSON.stringify({ status: 500 }));
                 return;
             }
-            const data = result.data;
             res.end(JSON.stringify({ status: 200, data: data }));
-            if (params.has('update')) {
-                for (let i = 0; i < data.length; i++) {
-                    const item = data[i];
-                    await local.updateHole(item);
-                }
-            }
-            if (key === '' && page === 1 && data.length > 0) {
-                const { pid } = data[0];
-                if (pid > maxId)
-                    maxId = Number(pid);
-            }
             return;
         }
         res.end(JSON.stringify({ status: 400 }));
+        return;
     }
-    catch (err) {
-        console.log(err);
+    if (password0 !== password) {
+        res.end(JSON.stringify({ status: 401 }));
+        return;
     }
+    if (path0 === '/ip') {
+        const result = await origin.getIP();
+        if (typeof result === 'number') {
+            res.end(JSON.stringify({ status: result }));
+            return;
+        }
+        res.end(`{"status":200,"data":${result}}`);
+        return;
+    }
+    const token = params.get('token');
+    if (typeof token !== 'string' || token.length !== 32) {
+        res.end(JSON.stringify({ status: 401 }));
+        return;
+    }
+    if (path0 === '/s') {
+        const result = await origin.getStars(token);
+        if (typeof result === 'number') {
+            res.end(JSON.stringify({ status: result }));
+            return;
+        }
+        const data = result.data;
+        res.end(JSON.stringify({ status: 200, data: data }));
+        if (params.has('update')) {
+            for (let i = 0; i < data.length; i++) {
+                const item = data[i];
+                await local.updateHole(item);
+            }
+        }
+        return;
+    }
+    if (path0.startsWith('/s')) {
+        const pid = Number(path0.slice(2));
+        if (isNaN(pid)) {
+            res.end(JSON.stringify({ status: 400 }));
+            return;
+        }
+        if (pid > maxId) {
+            res.end(JSON.stringify({ status: 404 }));
+            return;
+        }
+        const result = await origin.star(pid, params.has('starred'), token);
+        res.end(JSON.stringify({ status: result }));
+        return;
+    }
+    if (path0.startsWith('/c')) {
+        const pid = Number(path0.slice(2));
+        if (isNaN(pid)) {
+            res.end(JSON.stringify({ status: 400 }));
+            return;
+        }
+        if (pid > maxId || pid <= oldCommentsThreshold) {
+            res.end(JSON.stringify({ status: 404 }));
+            return;
+        }
+        const text = params.get('text');
+        if (text !== null && text.length > 0) {
+            const result = await origin.comment(pid, text, token);
+            res.end(JSON.stringify({ status: result }));
+            return;
+        }
+        const result = await origin.getComments(pid, token);
+        if (typeof result === 'number') {
+            res.end(JSON.stringify({ status: result }));
+            return;
+        }
+        const data = result.data;
+        res.end(JSON.stringify({ status: 200, data: data }));
+        if (params.has('update')) {
+            for (let i = 0; i < data.length; i++) {
+                const item = data[i];
+                await local.updateComment(item);
+            }
+        }
+        return;
+    }
+    if (path0.startsWith('/h')) {
+        const pid = Number(path0.slice(2));
+        if (isNaN(pid)) {
+            res.end(JSON.stringify({ status: 400 }));
+            return;
+        }
+        if (pid > maxId || pid <= oldCommentsThreshold) {
+            res.end(JSON.stringify({ status: 404 }));
+            return;
+        }
+        const result = await origin.getHole(pid, token);
+        if (result === 404) {
+            res.end(JSON.stringify({ status: 404 }));
+            if (params.has('update')) {
+                const result = await origin.getHole(maxId, token);
+                if (typeof result === 'number')
+                    return;
+                await local.emptyHole(pid);
+            }
+            return;
+        }
+        if (typeof result === 'number') {
+            res.end(JSON.stringify({ status: result }));
+            return;
+        }
+        const data = result.data;
+        res.end(JSON.stringify({ status: 200, data: data }));
+        if (params.has('update')) {
+            await local.updateHole(data);
+        }
+        return;
+    }
+    if (path0.startsWith('/p')) {
+        const page = Number(path0.slice(2));
+        if (isNaN(page)) {
+            res.end(JSON.stringify({ status: 400 }));
+            return;
+        }
+        let key = params.get('key');
+        if (typeof key !== 'string') {
+            key = '';
+        }
+        const result = await origin.getPage(key, page, token);
+        if (typeof result === 'number') {
+            res.end(JSON.stringify({ status: result }));
+            return;
+        }
+        const data = result.data;
+        res.end(JSON.stringify({ status: 200, data: data }));
+        if (params.has('update')) {
+            for (let i = 0; i < data.length; i++) {
+                const item = data[i];
+                await local.updateHole(item);
+            }
+        }
+        if (key === '' && page === 1 && data.length > 0) {
+            const { pid } = data[0];
+            if (pid > maxId)
+                maxId = Number(pid);
+        }
+        return;
+    }
+    res.end(JSON.stringify({ status: 400 }));
 });
-server.listen(port);
+server.listen(init_1.config.port);

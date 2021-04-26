@@ -3,9 +3,10 @@ import * as path from 'path'
 import * as https from 'https'
 import * as mysql from 'mysql'
 import {HoleData,CommentData} from './origin'
-const config=JSON.parse(fs.readFileSync(path.join(__dirname,'../config.json'),{encoding:'utf8'}))
+import {config} from './init'
+import { semilog } from './mod'
+Object.assign(config,JSON.parse(fs.readFileSync(path.join(__dirname,'../config.json'),{encoding:'utf8'})))
 const config0:mysql.PoolConfig=config.mysql
-const archive=config.archive
 const config1:mysql.PoolConfig={
     charset: 'utf8mb4_unicode_ci',
     multipleStatements: true,
@@ -23,13 +24,13 @@ async function getResult(sen:string,vals:(string|number)[]){
     const result=await new Promise((resolve:(val:any[]|400|500)=>void)=>{
         pool.getConnection((err,con)=>{
             if(err){
-                console.log(err)
+                semilog(err)
                 resolve(500)
                 return
             }
             con.query(sen,vals,(err,result)=>{
                 if(err){
-                    console.log(err)
+                    semilog(err)
                     resolve(400)
                     return
                 }
@@ -75,7 +76,7 @@ export async function getOldComments(id:number|string){
     return result
 }
 export async function getHole(id:number|string){
-    const result:HoleData[]|400|500=await getResult('select hidden,likenum,pid,reply,tag,text,timestamp,type,url from holes where pid=?',[id])
+    const result:HoleData[]|400|500=await getResult('select etimestamp,hidden,likenum,pid,reply,tag,text,timestamp,type,url from holes where pid=?',[id])
     if(result===400||result===500)return 500
     if(result.length===0)return 404
     return result[0]
@@ -126,10 +127,10 @@ export async function updateHole(data:HoleData){
     if(typeof data.url!=='string')data.url=''
     if(typeof data.type!=='string')data.type='text'
     else if(data.type=='image'){
-        if(archive)await updateImg(data.url)
+        if(config.archive)await updateImg(data.url)
     }
     else if(data.type==='audio'){
-        if(archive)await updateAudio(data.url)
+        if(config.archive)await updateAudio(data.url)
     }
     const id=Number(data.pid)
     const timestamp=Number(data.timestamp)
@@ -171,19 +172,19 @@ async function updateFile(path0:string,url:string){
                 return
             }
             res.on('error',err=>{
-                console.log(err)
+                semilog(err)
                 resolve(500)
             })
             let stream
             try{
                 stream=fs.createWriteStream(path0)
             }catch(err){
-                console.log(err)
+                semilog(err)
                 resolve(500)
                 return
             }
             stream.on('error',err=>{
-                console.log(err)
+                semilog(err)
                 resolve(500)
             })
             res.on('end',()=>{

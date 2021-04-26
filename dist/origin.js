@@ -1,107 +1,184 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getPage = exports.getStars = exports.getHole = exports.getComments = exports.star = exports.getIP = void 0;
+exports.comment = exports.getPage = exports.getStars = exports.getHole = exports.getComments = exports.star = exports.getIP = void 0;
 const fs = require("fs");
 const path = require("path");
 const https = require("https");
 const http = require("http");
-const proxies = JSON.parse(fs.readFileSync(path.join(__dirname, '../config.json'), { encoding: 'utf8' })).server.proxies;
-async function basicallyGetResult(url) {
-    const data = await new Promise((resolve) => {
-        try {
-            let url0;
-            let options;
-            if (proxies.length === 0) {
-                url0 = url;
-                options = {};
+const mod_1 = require("./mod");
+const init_1 = require("./init");
+Object.assign(init_1.config, JSON.parse(fs.readFileSync(path.join(__dirname, '../config.json'), { encoding: 'utf8' })));
+async function basicallyGet(url, params = {}, form = {}, cookie = '', referer = '') {
+    let paramsStr = new URL(url).searchParams.toString();
+    if (paramsStr.length > 0)
+        paramsStr += '&';
+    paramsStr += new URLSearchParams(params).toString();
+    if (paramsStr.length > 0)
+        paramsStr = '?' + paramsStr;
+    url = new URL(paramsStr, url).href;
+    const formStr = new URLSearchParams(form).toString();
+    const headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36'
+    };
+    if (cookie.length > 0)
+        headers.Cookie = cookie;
+    if (referer.length > 0)
+        headers.Referer = referer;
+    const options = {
+        method: formStr.length > 0 ? 'POST' : 'GET',
+        headers: headers
+    };
+    const proxies = init_1.config.proxies;
+    if (proxies.length > 0) {
+        const i = Math.min(Math.floor(Math.random() * proxies.length), proxies.length - 1);
+        const proxy = proxies[i];
+        options.path = url;
+        url = proxy;
+    }
+    const result = await new Promise((resolve) => {
+        setTimeout(() => {
+            resolve(500);
+        }, init_1.config.timeout * 1000);
+        const httpsOrHTTP = url.startsWith('https://') ? https : http;
+        const req = httpsOrHTTP.request(url, options, async (res) => {
+            const { statusCode } = res;
+            if (statusCode === undefined) {
+                resolve(500);
+                return;
+            }
+            if (statusCode >= 400) {
+                resolve(statusCode);
+                return;
+            }
+            let cookie;
+            const cookie0 = res.headers["set-cookie"];
+            if (cookie0 === undefined) {
+                cookie = '';
             }
             else {
-                const i = Math.min(Math.floor(Math.random() * proxies.length), proxies.length - 1);
-                const proxy = proxies[i];
-                url0 = proxy;
-                options = { path: url };
+                cookie = cookie0.map(val => val.split(';')[0]).join('; ');
             }
-            const httpsOrHTTP = url0.startsWith('https://') ? https : http;
-            const req = httpsOrHTTP.get(url0, options, res => {
-                const { statusCode } = res;
-                if (statusCode === undefined) {
-                    resolve(500);
-                    return;
+            let body = '';
+            const buffers = [];
+            res.on('data', chunk => {
+                if (typeof chunk === 'string') {
+                    body += chunk;
                 }
-                if (statusCode !== 200) {
-                    resolve(statusCode);
-                    return;
+                else if (chunk instanceof Buffer) {
+                    body += chunk;
+                    buffers.push(chunk);
                 }
-                let data = '';
-                res.on('error', err => {
-                    console.log(err);
-                    resolve(500);
+            });
+            res.on('end', () => {
+                resolve({
+                    body: body,
+                    buffer: Buffer.concat(buffers),
+                    cookie: cookie,
+                    headers: res.headers,
+                    status: statusCode
                 });
-                res.on('data', chunk => {
-                    data += chunk;
-                });
-                res.on('end', () => {
-                    resolve(data);
-                });
-            }).on('error', err => {
-                console.log(err);
+            });
+            res.on('error', err => {
+                mod_1.semilog(err);
                 resolve(500);
             });
-        }
-        catch (err) {
-            console.log(err);
+        }).on('error', err => {
+            mod_1.semilog(err);
             resolve(500);
+        });
+        if (formStr.length > 0) {
+            req.write(formStr);
         }
+        req.end();
     });
-    return data;
+    return result;
 }
-async function getResult(url) {
-    const data = await basicallyGetResult(url);
-    if (typeof data !== 'string')
-        return data;
+async function getResult(params = {}, form = {}) {
+    Object.assign(params, {
+        PKUHelperAPI: '3.0',
+        jsapiver: '201027113050-449840'
+    });
+    const result = await basicallyGet('https://pkuhelper.pku.edu.cn/services/pkuhole/api.php', params, form);
+    if (typeof result === 'number')
+        return result;
+    const { status, body } = result;
+    if (status !== 200)
+        return status;
     try {
-        const json = JSON.parse(data);
-        if (json.code !== 0)
+        const { code, data, msg } = JSON.parse(body);
+        if (code === 0)
+            return { data: data };
+        if (msg === '没有这条树洞')
             return 404;
-        return { data: json.data };
     }
     catch (err) {
-        console.log(err);
-        return 500;
+        mod_1.semilog(err);
     }
+    return 500;
 }
 async function getIP() {
-    const result = await basicallyGetResult('http://ifconfig.me/all.json');
-    return result;
+    const result = await basicallyGet('http://ifconfig.me/all.json');
+    if (typeof result === 'number')
+        return result;
+    const { status, body } = result;
+    if (status !== 200)
+        return status;
+    return body;
 }
 exports.getIP = getIP;
 async function star(id, starred, token) {
-    const result = await getResult(`https://pkuhelper.pku.edu.cn/services/pkuhole/api.php?action=attention&pid=${id}&switch=${starred ? '0' : '1'}&PKUHelperAPI=3.0&jsapiver=201027113050-446530&user_token=${token}`);
+    const result = await getResult({
+        action: 'attention',
+        pid: id.toString(),
+        switch: starred ? '0' : '1',
+        user_token: token
+    });
     if (typeof result === 'number')
         return result;
     return 200;
 }
 exports.star = star;
 async function getList(page, token) {
-    const result = await getResult(`https://pkuhelper.pku.edu.cn/services/pkuhole/api.php?action=getlist&p=${page}&PKUHelperAPI=3.0&jsapiver=201027113050-446532&user_token=${token}`);
+    const result = await getResult({
+        action: 'getlist',
+        p: page.toString(),
+        user_token: token
+    });
     return result;
 }
 async function getComments(id, token) {
-    const result = await getResult(`https://pkuhelper.pku.edu.cn/services/pkuhole/api.php?action=getcomment&pid=${id}&PKUHelperAPI=3.0&jsapiver=201027113050-446532&user_token=${token}`);
+    const result = await getResult({
+        action: 'getcomment',
+        pid: id.toString(),
+        user_token: token
+    });
     return result;
 }
 exports.getComments = getComments;
 async function getHole(id, token) {
-    const result = await getResult(`https://pkuhelper.pku.edu.cn/services/pkuhole/api.php?action=getone&pid=${id}&PKUHelperAPI=3.0&jsapiver=201027113050-446532&user_token=${token}`);
+    const result = await getResult({
+        action: 'getone',
+        pid: id.toString(),
+        user_token: token
+    });
     return result;
 }
 exports.getHole = getHole;
 async function getSearch(key, page, token) {
-    const result = await getResult(`https://pkuhelper.pku.edu.cn/services/pkuhole/api.php?action=search&pagesize=50&page=${page}&keywords=${encodeURIComponent(key)}&PKUHelperAPI=3.0&jsapiver=201027113050-446532&user_token=${token}`);
+    const result = await getResult({
+        action: 'search',
+        pagesize: '50',
+        page: page.toString(),
+        keywords: key,
+        user_token: token
+    });
     return result;
 }
 async function getStars(token) {
-    const result = await getResult(`https://pkuhelper.pku.edu.cn/services/pkuhole/api.php?action=getattention&PKUHelperAPI=3.0&jsapiver=201027113050-446532&user_token=${token}`);
+    const result = await getResult({
+        action: 'getattention',
+        user_token: token
+    });
     return result;
 }
 exports.getStars = getStars;
@@ -111,3 +188,18 @@ async function getPage(key, page, token) {
     return await getSearch(key, page, token);
 }
 exports.getPage = getPage;
+async function comment(id, text, token) {
+    const result = await getResult({
+        action: 'docomment',
+        pid: id.toString(),
+        user_token: token
+    }, {
+        pid: id.toString(),
+        text: text,
+        user_token: token
+    });
+    if (typeof result === 'number')
+        return result;
+    return 200;
+}
+exports.comment = comment;

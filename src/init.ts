@@ -1,46 +1,32 @@
 import * as fs from 'fs'
 import * as path from 'path'
-const path0=path.join(__dirname,'../secrets/')
-const path1=path.join(__dirname,'../secrets/mysql/')
-const path2=path.join(__dirname,'../config.json')
-const path3=path.join(__dirname,'../archive/')
-const path4=path.join(__dirname,'../archive/imgs/')
-const path5=path.join(__dirname,'../archive/audios/')
-if(!fs.existsSync(path0)){
-    fs.mkdirSync(path0)
-}
-if(!fs.existsSync(path1)){
-    fs.mkdirSync(path1)
-}
-if(!fs.existsSync(path3)){
-    fs.mkdirSync(path3)
-}
-if(!fs.existsSync(path4)){
-    fs.mkdirSync(path4)
-}
-if(!fs.existsSync(path5)){
-    fs.mkdirSync(path5)
-}
-if(!fs.existsSync(path2)){
-    fs.writeFileSync(path2,
-`{
-    "server":{
-        "port":8080,
-        "proxies":[
-            "http://xx.xx.xx.xx:3128/"
-        ],
-        "passwords":[
-            "xxxxxxxx"
-        ]
+[
+    '../secrets/',
+    '../secrets/mysql/',
+    '../archive/',
+    '../archive/imgs/',
+    '../archive/audios/',
+    '../info/'
+].map(val=>path.join(__dirname,val)).forEach(val=>{
+    if(!fs.existsSync(val))fs.mkdirSync(val)
+})
+export const config={
+    port:8080,
+    proxies:[
+        "http://xx.xx.xx.xx:3128/"
+    ],
+    passwords:[
+        "xxxxxxxx"
+    ],
+    mysql:{
+        host:"xxxxxxxx",
+        port:3306,
+        user:"xxxxxxxx",
+        password:"xxxxxxxx",
+        database:"ph"
     },
-    "mysql":{
-        "host":"xxxxxxxx",
-        "port":3306,
-        "user":"xxxxxxxx",
-        "password":"xxxxxxxx",
-        "database":"ph"
-    },
-    "archive":false
+    timeout:30,
+    archive:false
 }
-`)
-}
+const path0=path.join(__dirname,'../config.json')
+if(!fs.existsSync(path0))fs.writeFileSync(path0,JSON.stringify(config,null,4))

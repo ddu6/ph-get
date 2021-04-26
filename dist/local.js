@@ -5,9 +5,10 @@ const fs = require("fs");
 const path = require("path");
 const https = require("https");
 const mysql = require("mysql");
-const config = JSON.parse(fs.readFileSync(path.join(__dirname, '../config.json'), { encoding: 'utf8' }));
-const config0 = config.mysql;
-const archive = config.archive;
+const init_1 = require("./init");
+const mod_1 = require("./mod");
+Object.assign(init_1.config, JSON.parse(fs.readFileSync(path.join(__dirname, '../config.json'), { encoding: 'utf8' })));
+const config0 = init_1.config.mysql;
 const config1 = {
     charset: 'utf8mb4_unicode_ci',
     multipleStatements: true,
@@ -25,13 +26,13 @@ async function getResult(sen, vals) {
     const result = await new Promise((resolve) => {
         pool.getConnection((err, con) => {
             if (err) {
-                console.log(err);
+                mod_1.semilog(err);
                 resolve(500);
                 return;
             }
             con.query(sen, vals, (err, result) => {
                 if (err) {
-                    console.log(err);
+                    mod_1.semilog(err);
                     resolve(400);
                     return;
                 }
@@ -88,7 +89,7 @@ async function getOldComments(id) {
 }
 exports.getOldComments = getOldComments;
 async function getHole(id) {
-    const result = await getResult('select hidden,likenum,pid,reply,tag,text,timestamp,type,url from holes where pid=?', [id]);
+    const result = await getResult('select etimestamp,hidden,likenum,pid,reply,tag,text,timestamp,type,url from holes where pid=?', [id]);
     if (result === 400 || result === 500)
         return 500;
     if (result.length === 0)
@@ -155,11 +156,11 @@ async function updateHole(data) {
     if (typeof data.type !== 'string')
         data.type = 'text';
     else if (data.type == 'image') {
-        if (archive)
+        if (init_1.config.archive)
             await updateImg(data.url);
     }
     else if (data.type === 'audio') {
-        if (archive)
+        if (init_1.config.archive)
             await updateAudio(data.url);
     }
     const id = Number(data.pid);
@@ -213,7 +214,7 @@ async function updateFile(path0, url) {
                 return;
             }
             res.on('error', err => {
-                console.log(err);
+                mod_1.semilog(err);
                 resolve(500);
             });
             let stream;
@@ -221,12 +222,12 @@ async function updateFile(path0, url) {
                 stream = fs.createWriteStream(path0);
             }
             catch (err) {
-                console.log(err);
+                mod_1.semilog(err);
                 resolve(500);
                 return;
             }
             stream.on('error', err => {
-                console.log(err);
+                mod_1.semilog(err);
                 resolve(500);
             });
             res.on('end', () => {
