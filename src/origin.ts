@@ -53,7 +53,6 @@ async function basicallyGet(url:string,params:Record<string,string>={},form:Reco
     }
     if(formStr.length>0){
         Object.assign(headers,{
-            'X-Requested-With': 'XMLHttpRequest',
             'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
         })
     }
