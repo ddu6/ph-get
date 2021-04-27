@@ -31,7 +31,7 @@ export interface CommentData{
     timestamp:number|string
     name:string|null|undefined
 }
-async function basicallyGet(url:string,params:Record<string,string>={},form:Record<string,string>={},cookie='',referer=''){
+async function basicallyGet(url:string,params:Record<string,string>={},form:Record<string,string>={},cookie='',referer='',noUserAgent=false){
     let paramsStr=new URL(url).searchParams.toString()
     if(paramsStr.length>0){
         paramsStr+='&'
@@ -42,14 +42,15 @@ async function basicallyGet(url:string,params:Record<string,string>={},form:Reco
     }
     url=new URL(paramsStr,url).href
     const formStr=new URLSearchParams(form).toString()
-    const headers:http.OutgoingHttpHeaders={
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36'
-    }
+    const headers:http.OutgoingHttpHeaders={}
     if(cookie.length>0){
         headers.Cookie=cookie
     }
     if(referer.length>0){
         headers.Referer=referer
+    }
+    if(!noUserAgent){
+        headers['User-Agent']='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36'
     }
     if(formStr.length>0){
         Object.assign(headers,{
@@ -145,7 +146,7 @@ async function getResult(params:Record<string,string>={},form:Record<string,stri
     return 500
 }
 export async function getIP(){
-    const result=await basicallyGet('https://ifconfig.me/all.json')
+    const result=await basicallyGet('http://ifconfig.me/all.json',{},{},'','',true)
     if(typeof result==='number')return result
     const {status,body}=result
     if(status!==200)return status

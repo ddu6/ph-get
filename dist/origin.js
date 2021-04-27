@@ -8,7 +8,7 @@ const http = require("http");
 const mod_1 = require("./mod");
 const init_1 = require("./init");
 Object.assign(init_1.config, JSON.parse(fs.readFileSync(path.join(__dirname, '../config.json'), { encoding: 'utf8' })));
-async function basicallyGet(url, params = {}, form = {}, cookie = '', referer = '') {
+async function basicallyGet(url, params = {}, form = {}, cookie = '', referer = '', noUserAgent = false) {
     let paramsStr = new URL(url).searchParams.toString();
     if (paramsStr.length > 0) {
         paramsStr += '&';
@@ -19,14 +19,15 @@ async function basicallyGet(url, params = {}, form = {}, cookie = '', referer = 
     }
     url = new URL(paramsStr, url).href;
     const formStr = new URLSearchParams(form).toString();
-    const headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36'
-    };
+    const headers = {};
     if (cookie.length > 0) {
         headers.Cookie = cookie;
     }
     if (referer.length > 0) {
         headers.Referer = referer;
+    }
+    if (!noUserAgent) {
+        headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36';
     }
     if (formStr.length > 0) {
         Object.assign(headers, {
@@ -129,7 +130,7 @@ async function getResult(params = {}, form = {}) {
     return 500;
 }
 async function getIP() {
-    const result = await basicallyGet('https://ifconfig.me/all.json');
+    const result = await basicallyGet('http://ifconfig.me/all.json', {}, {}, '', '', true);
     if (typeof result === 'number')
         return result;
     const { status, body } = result;
