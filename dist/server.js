@@ -234,9 +234,12 @@ const server = http.createServer(async (req, res) => {
         const data = result.data;
         res.end(JSON.stringify({ status: 200, data: data }));
         if (params.has('update')) {
-            for (let i = 0; i < data.length; i++) {
-                const item = data[i];
-                await local.updateComment(item);
+            const result = await local.getHole(pid);
+            if (typeof result !== 'number') {
+                for (let i = 0; i < data.length; i++) {
+                    const item = data[i];
+                    await local.updateComment(item);
+                }
             }
         }
         return;
@@ -256,9 +259,9 @@ const server = http.createServer(async (req, res) => {
             res.end(JSON.stringify({ status: 404 }));
             if (params.has('update')) {
                 const result = await origin.getHole(maxId, token);
-                if (typeof result === 'number')
-                    return;
-                await local.emptyHole(pid);
+                if (typeof result !== 'number') {
+                    await local.emptyHole(pid);
+                }
             }
             return;
         }
