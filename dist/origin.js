@@ -129,7 +129,7 @@ async function getResult(params = {}, form = {}) {
     return 500;
 }
 async function getIP() {
-    const result = await basicallyGet('http://ifconfig.me/all.json');
+    const result = await basicallyGet('https://ifconfig.me/all.json');
     if (typeof result === 'number')
         return result;
     const { status, body } = result;

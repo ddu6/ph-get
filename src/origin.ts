@@ -145,7 +145,7 @@ async function getResult(params:Record<string,string>={},form:Record<string,stri
     return 500
 }
 export async function getIP(){
-    const result=await basicallyGet('http://ifconfig.me/all.json')
+    const result=await basicallyGet('https://ifconfig.me/all.json')
     if(typeof result==='number')return result
     const {status,body}=result
     if(status!==200)return status
