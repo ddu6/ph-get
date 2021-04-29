@@ -62,7 +62,7 @@ exit
 
 ## Install
 ```
-git clone https://github.com/ttxs7/ph-get.git
+git clone https://github.com/ddu6/ph-get.git
 ```
 ```
 cd ph-get
