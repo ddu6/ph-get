@@ -187,13 +187,13 @@ const server = http.createServer(async (req, res) => {
             return;
         }
         const data = result.data;
-        res.end(JSON.stringify({ status: 200, data: data }));
         if (params.has('update')) {
             for (let i = 0; i < data.length; i++) {
                 const item = data[i];
                 await local.updateHole(item);
             }
         }
+        res.end(JSON.stringify({ status: 200, data: data }));
         return;
     }
     if (path0.startsWith('/s')) {
@@ -232,16 +232,20 @@ const server = http.createServer(async (req, res) => {
             return;
         }
         const data = result.data;
-        res.end(JSON.stringify({ status: 200, data: data }));
         if (params.has('update')) {
             const result = await local.getHole(pid);
             if (typeof result !== 'number') {
                 for (let i = 0; i < data.length; i++) {
                     const item = data[i];
-                    await local.updateComment(item);
+                    const result = await local.updateComment(item);
+                    if (result !== 200) {
+                        res.end(JSON.stringify({ status: 500 }));
+                        return;
+                    }
                 }
             }
         }
+        res.end(JSON.stringify({ status: 200, data: data }));
         return;
     }
     if (path0.startsWith('/h')) {
@@ -256,13 +260,13 @@ const server = http.createServer(async (req, res) => {
         }
         const result = await origin.getHole(pid, token);
         if (result === 404) {
-            res.end(JSON.stringify({ status: 404 }));
             if (params.has('update')) {
                 const result = await origin.getHole(maxId, token);
                 if (typeof result !== 'number') {
                     await local.emptyHole(pid);
                 }
             }
+            res.end(JSON.stringify({ status: 404 }));
             return;
         }
         if (typeof result === 'number') {
@@ -270,10 +274,14 @@ const server = http.createServer(async (req, res) => {
             return;
         }
         const data = result.data;
-        res.end(JSON.stringify({ status: 200, data: data }));
         if (params.has('update')) {
-            await local.updateHole(data);
+            const result = await local.updateHole(data);
+            if (result !== 200) {
+                res.end(JSON.stringify({ status: 500 }));
+                return;
+            }
         }
+        res.end(JSON.stringify({ status: 200, data: data }));
         return;
     }
     if (path0.startsWith('/p')) {
@@ -292,11 +300,14 @@ const server = http.createServer(async (req, res) => {
             return;
         }
         const data = result.data;
-        res.end(JSON.stringify({ status: 200, data: data }));
         if (params.has('update')) {
             for (let i = 0; i < data.length; i++) {
                 const item = data[i];
-                await local.updateHole(item);
+                const result = await local.updateHole(item);
+                if (result !== 200) {
+                    res.end(JSON.stringify({ status: 500 }));
+                    return;
+                }
             }
         }
         if (key === '' && page === 1 && data.length > 0) {
@@ -304,6 +315,7 @@ const server = http.createServer(async (req, res) => {
             if (pid > maxId)
                 maxId = Number(pid);
         }
+        res.end(JSON.stringify({ status: 200, data: data }));
         return;
     }
     res.end(JSON.stringify({ status: 400 }));
