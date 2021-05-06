@@ -236,7 +236,7 @@ const server=http.createServer(async(req,res)=>{
                     const item=data[i]
                     const result=await local.updateComment(item)
                     if(result!==200){
-                        res.end(JSON.stringify({status:500}))
+                        res.end(JSON.stringify({status:result}))
                         return
                     }
                 }
@@ -274,7 +274,7 @@ const server=http.createServer(async(req,res)=>{
         if(params.has('update')){
             const result=await local.updateHole(data)
             if(result!==200){
-                res.end(JSON.stringify({status:500}))
+                res.end(JSON.stringify({status:result}))
                 return
             }
         }
@@ -302,7 +302,7 @@ const server=http.createServer(async(req,res)=>{
                 const item=data[i]
                 const result=await local.updateHole(item)
                 if(result!==200){
-                    res.end(JSON.stringify({status:500}))
+                    res.end(JSON.stringify({status:result}))
                     return
                 }
             }

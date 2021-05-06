@@ -153,7 +153,7 @@ export async function updateComment(data:CommentData){
     if(typeof data.tag!=='string')data.tag=''
     if(typeof data.text!=='string')data.text=''
     if(typeof data.name!=='string')data.name=''
-    if(data.text.startsWith('[Helper]'))return 400
+    if(data.text.startsWith('[Helper]'))return 423
     const cid=Number(data.cid)
     const pid=Number(data.pid)
     const timestamp=Number(data.timestamp)

@@ -192,7 +192,7 @@ async function updateComment(data) {
     if (typeof data.name !== 'string')
         data.name = '';
     if (data.text.startsWith('[Helper]'))
-        return 400;
+        return 423;
     const cid = Number(data.cid);
     const pid = Number(data.pid);
     const timestamp = Number(data.timestamp);
