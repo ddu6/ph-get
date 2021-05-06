@@ -152,16 +152,6 @@ export async function getIP(){
     if(status!==200)return status
     return body
 }
-export async function star(id:number|string,starred:boolean,token:string){
-    const result=await getResult({
-        action:'attention',
-        pid:id.toString(),
-        switch:starred?'0':'1',
-        user_token:token
-    })
-    if(typeof result==='number')return result
-    return 200
-}
 async function getList(page:number|string,token:string){
     const result:{data:HoleData[]}|number=await getResult({
         action:'getlist',
@@ -196,26 +186,7 @@ async function getSearch(key:string,page:number|string,token:string){
     })
     return result
 }
-export async function getStars(token:string){
-    const result:{data:HoleData[]}|number=await getResult({
-        action:'getattention',
-        user_token:token
-    })
-    return result
-}
 export async function getPage(key:string,page:number|string,token:string){
     if(key.length===0)return await getList(page,token)
     return await getSearch(key,page,token)
-}
-export async function comment(id:number|string,text:string,token:string){
-    const result=await getResult({
-        action:'docomment',
-        user_token:token
-    },{
-        pid:id.toString(),
-        text:text,
-        user_token:token
-    })
-    if(typeof result==='number')return result
-    return 200
 }

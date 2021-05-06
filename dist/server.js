@@ -180,36 +180,6 @@ const server = http.createServer(async (req, res) => {
         res.end(JSON.stringify({ status: 401 }));
         return;
     }
-    if (path0 === '/s') {
-        const result = await origin.getStars(token);
-        if (typeof result === 'number') {
-            res.end(JSON.stringify({ status: result }));
-            return;
-        }
-        const data = result.data;
-        if (params.has('update')) {
-            for (let i = 0; i < data.length; i++) {
-                const item = data[i];
-                await local.updateHole(item);
-            }
-        }
-        res.end(JSON.stringify({ status: 200, data: data }));
-        return;
-    }
-    if (path0.startsWith('/s')) {
-        const pid = Number(path0.slice(2));
-        if (isNaN(pid)) {
-            res.end(JSON.stringify({ status: 400 }));
-            return;
-        }
-        if (pid > maxId) {
-            res.end(JSON.stringify({ status: 404 }));
-            return;
-        }
-        const result = await origin.star(pid, params.has('starred'), token);
-        res.end(JSON.stringify({ status: result }));
-        return;
-    }
     if (path0.startsWith('/c')) {
         const pid = Number(path0.slice(2));
         if (isNaN(pid)) {
@@ -220,12 +190,6 @@ const server = http.createServer(async (req, res) => {
             res.end(JSON.stringify({ status: 404 }));
             return;
         }
-        const text = params.get('text');
-        if (text !== null && text.length > 0) {
-            const result = await origin.comment(pid, text, token);
-            res.end(JSON.stringify({ status: result }));
-            return;
-        }
         const result = await origin.getComments(pid, token);
         if (typeof result === 'number') {
             res.end(JSON.stringify({ status: result }));
@@ -234,7 +198,7 @@ const server = http.createServer(async (req, res) => {
         const data = result.data;
         if (params.has('update')) {
             const result = await local.getHole(pid);
-            if (typeof result !== 'number') {
+            if (typeof result !== 'number' && Number(result.timestamp) !== 0) {
                 for (let i = 0; i < data.length; i++) {
                     const item = data[i];
                     const result = await local.updateComment(item);
@@ -276,7 +240,7 @@ const server = http.createServer(async (req, res) => {
         const data = result.data;
         if (params.has('update')) {
             const result = await local.updateHole(data);
-            if (result !== 200) {
+            if (result === 500) {
                 res.end(JSON.stringify({ status: result }));
                 return;
             }
@@ -304,7 +268,7 @@ const server = http.createServer(async (req, res) => {
             for (let i = 0; i < data.length; i++) {
                 const item = data[i];
                 const result = await local.updateHole(item);
-                if (result !== 200) {
+                if (result === 500) {
                     res.end(JSON.stringify({ status: result }));
                     return;
                 }

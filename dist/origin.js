@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.comment = exports.getPage = exports.getStars = exports.getHole = exports.getComments = exports.star = exports.getIP = void 0;
+exports.getPage = exports.getHole = exports.getComments = exports.getIP = void 0;
 const fs = require("fs");
 const path = require("path");
 const https = require("https");
@@ -139,18 +139,6 @@ async function getIP() {
     return body;
 }
 exports.getIP = getIP;
-async function star(id, starred, token) {
-    const result = await getResult({
-        action: 'attention',
-        pid: id.toString(),
-        switch: starred ? '0' : '1',
-        user_token: token
-    });
-    if (typeof result === 'number')
-        return result;
-    return 200;
-}
-exports.star = star;
 async function getList(page, token) {
     const result = await getResult({
         action: 'getlist',
@@ -187,31 +175,9 @@ async function getSearch(key, page, token) {
     });
     return result;
 }
-async function getStars(token) {
-    const result = await getResult({
-        action: 'getattention',
-        user_token: token
-    });
-    return result;
-}
-exports.getStars = getStars;
 async function getPage(key, page, token) {
     if (key.length === 0)
         return await getList(page, token);
     return await getSearch(key, page, token);
 }
 exports.getPage = getPage;
-async function comment(id, text, token) {
-    const result = await getResult({
-        action: 'docomment',
-        user_token: token
-    }, {
-        pid: id.toString(),
-        text: text,
-        user_token: token
-    });
-    if (typeof result === 'number')
-        return result;
-    return 200;
-}
-exports.comment = comment;
