@@ -233,6 +233,12 @@ const server = http.createServer(async (req, res) => {
             return;
         }
         const data = result.data;
+        if (data.length > 0) {
+            const cid = Math.max(Number(data[0].cid), Number(data[data.length - 1].cid));
+            if (cid > maxCId) {
+                maxCId = cid;
+            }
+        }
         if (params.has('update')) {
             const result = await local.getHole(pid);
             if (typeof result !== 'number' && Number(result.timestamp) !== 0) {
@@ -301,6 +307,12 @@ const server = http.createServer(async (req, res) => {
             return;
         }
         const data = result.data;
+        if (key === '' && page === 1 && data.length > 0) {
+            const pid = Number(data[0].pid);
+            if (pid > maxId) {
+                maxId = pid;
+            }
+        }
         if (params.has('update')) {
             for (let i = 0; i < data.length; i++) {
                 const item = data[i];
@@ -310,11 +322,6 @@ const server = http.createServer(async (req, res) => {
                     return;
                 }
             }
-        }
-        if (key === '' && page === 1 && data.length > 0) {
-            const { pid } = data[0];
-            if (pid > maxId)
-                maxId = Number(pid);
         }
         res.end(JSON.stringify({ status: 200, data: data }));
         return;
