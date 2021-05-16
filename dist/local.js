@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateComment = exports.updateHole = exports.emptyHole = exports.getPage = exports.getHole = exports.getOldComments = exports.getComments = exports.getCIds = exports.getIds = exports.getInfo = void 0;
+exports.updateComment = exports.updateHole = exports.emptyHole = exports.getPage = exports.getHoleFromCId = exports.getHole = exports.getOldComments = exports.getComments = exports.getComment = exports.getCIds = exports.getIds = exports.getInfo = void 0;
 const fs = require("fs");
 const path = require("path");
 const https = require("https");
@@ -74,6 +74,15 @@ async function getCIds(start, step = 10000) {
     return result.map(val => val.cid);
 }
 exports.getCIds = getCIds;
+async function getComment(cid) {
+    const result = await getResult('select * from comments where cid=? limit 1', [cid]);
+    if (result === 400 || result === 500)
+        return 500;
+    if (result.length === 0)
+        return 404;
+    return result[0];
+}
+exports.getComment = getComment;
 async function getComments(id) {
     const result = await getResult('select * from comments where pid=?', [id]);
     if (result === 400 || result === 500)
@@ -89,7 +98,7 @@ async function getOldComments(id) {
 }
 exports.getOldComments = getOldComments;
 async function getHole(id) {
-    const result = await getResult('select etimestamp,hidden,likenum,pid,reply,tag,text,timestamp,type,url from holes where pid=?', [id]);
+    const result = await getResult('select etimestamp,hidden,likenum,pid,reply,tag,text,timestamp,type,url from holes where pid=? limit 1', [id]);
     if (result === 400 || result === 500)
         return 500;
     if (result.length === 0)
@@ -97,6 +106,21 @@ async function getHole(id) {
     return result[0];
 }
 exports.getHole = getHole;
+async function getHoleFromCId(cid) {
+    const result = await getResult('select * from comments where cid=? limit 1', [cid]);
+    if (result === 400 || result === 500)
+        return 500;
+    if (result.length === 0)
+        return 404;
+    const id = Number(result[0].pid);
+    const result1 = await getResult('select etimestamp,hidden,likenum,pid,reply,tag,text,timestamp,type,url from holes where pid=? limit 1', [id]);
+    if (result1 === 400 || result1 === 500)
+        return 500;
+    if (result1.length === 0)
+        return 404;
+    return result1[0];
+}
+exports.getHoleFromCId = getHoleFromCId;
 async function getPage(key, page, order, s, e) {
     const conditions = [['timestamp!=0']];
     const vals = [];
@@ -171,9 +195,9 @@ async function updateHole(data) {
     }
     const id = Number(data.pid);
     const timestamp = Number(data.timestamp);
-    const result0 = await getResult('select pid from holes where pid=?', [id]);
+    const result0 = await getResult('select pid from holes where pid=? limit 1', [id]);
     if (result0 !== 400 && result0 !== 500 && result0.length === 1) {
-        const result1 = await getResult('update holes set tag=?,reply=?,likenum=? where pid=?', [data.tag, Number(data.reply), Number(data.likenum), id]);
+        const result1 = await getResult('update holes set tag=?,reply=?,likenum=? where pid=? limit 1', [data.tag, Number(data.reply), Number(data.likenum), id]);
         if (result1 === 400 || result1 === 500)
             return 500;
         return 200;
@@ -196,7 +220,7 @@ async function updateComment(data) {
     const cid = Number(data.cid);
     const pid = Number(data.pid);
     const timestamp = Number(data.timestamp);
-    const result0 = await getResult('select cid from comments where cid=?', [cid]);
+    const result0 = await getResult('select cid from comments where cid=? limit 1', [cid]);
     if (result0 !== 400 && result0 !== 500 && result0.length === 1)
         return 200;
     const result1 = await getResult('replace into comments (`cid`,`pid`,`tag`,`timestamp`,`text`,`name`) values (?,?,?,?,?,?)', [cid, pid, data.tag, timestamp, data.text, data.name]);

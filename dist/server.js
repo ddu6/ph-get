@@ -8,6 +8,7 @@ const http = require("http");
 const init_1 = require("./init");
 Object.assign(init_1.config, JSON.parse(fs.readFileSync(path.join(__dirname, '../config.json'), { encoding: 'utf8' })));
 let maxId = 100000;
+let maxCId = 100000;
 const oldCommentsThreshold = 32859;
 const passwords = init_1.config.passwords;
 if (passwords.length === 0)
@@ -83,6 +84,24 @@ const server = http.createServer(async (req, res) => {
             res.end(JSON.stringify({ status: 200, data: data }));
             return;
         }
+        if (path1.startsWith('/cc')) {
+            const cid = Number(path1.slice(3));
+            if (isNaN(cid)) {
+                res.end(JSON.stringify({ status: 400 }));
+                return;
+            }
+            if (cid > maxCId) {
+                res.end(JSON.stringify({ status: 404 }));
+                return;
+            }
+            const data = await local.getComment(cid);
+            if (data === 500 || data === 404) {
+                res.end(JSON.stringify({ status: data }));
+                return;
+            }
+            res.end(JSON.stringify({ status: 200, data: data }));
+            return;
+        }
         if (path1.startsWith('/c')) {
             const pid = Number(path1.slice(2));
             if (isNaN(pid)) {
@@ -105,6 +124,24 @@ const server = http.createServer(async (req, res) => {
             const data = await local.getComments(pid);
             if (data === 500) {
                 res.end(JSON.stringify({ status: 500 }));
+                return;
+            }
+            res.end(JSON.stringify({ status: 200, data: data }));
+            return;
+        }
+        if (path1.startsWith('/hc')) {
+            const cid = Number(path1.slice(3));
+            if (isNaN(cid)) {
+                res.end(JSON.stringify({ status: 400 }));
+                return;
+            }
+            if (cid > maxCId) {
+                res.end(JSON.stringify({ status: 404 }));
+                return;
+            }
+            const data = await local.getHoleFromCId(cid);
+            if (data === 500 || data === 404) {
+                res.end(JSON.stringify({ status: data }));
                 return;
             }
             res.end(JSON.stringify({ status: 200, data: data }));

@@ -65,6 +65,12 @@ export async function getCIds(start:number,step=10000){
     if(result===400||result===500)return 500
     return result.map(val=>val.cid)
 }
+export async function getComment(cid:number|string){
+    const result:CommentData[]|400|500=await getResult('select * from comments where cid=? limit 1',[cid])
+    if(result===400||result===500)return 500
+    if(result.length===0)return 404
+    return result[0]
+}
 export async function getComments(id:number|string){
     const result:CommentData[]|400|500=await getResult('select * from comments where pid=?',[id])
     if(result===400||result===500)return 500
@@ -76,10 +82,20 @@ export async function getOldComments(id:number|string){
     return result
 }
 export async function getHole(id:number|string){
-    const result:HoleData[]|400|500=await getResult('select etimestamp,hidden,likenum,pid,reply,tag,text,timestamp,type,url from holes where pid=?',[id])
+    const result:HoleData[]|400|500=await getResult('select etimestamp,hidden,likenum,pid,reply,tag,text,timestamp,type,url from holes where pid=? limit 1',[id])
     if(result===400||result===500)return 500
     if(result.length===0)return 404
     return result[0]
+}
+export async function getHoleFromCId(cid:number|string){
+    const result:CommentData[]|400|500=await getResult('select * from comments where cid=? limit 1',[cid])
+    if(result===400||result===500)return 500
+    if(result.length===0)return 404
+    const id=Number(result[0].pid)
+    const result1:HoleData[]|400|500=await getResult('select etimestamp,hidden,likenum,pid,reply,tag,text,timestamp,type,url from holes where pid=? limit 1',[id])
+    if(result1===400||result1===500)return 500
+    if(result1.length===0)return 404
+    return result1[0]
 }
 export async function getPage(key:string,page:number,order:any,s:number,e:number){
     const conditions=[['timestamp!=0']]
@@ -139,9 +155,9 @@ export async function updateHole(data:HoleData){
     }
     const id=Number(data.pid)
     const timestamp=Number(data.timestamp)
-    const result0=await getResult('select pid from holes where pid=?',[id])
+    const result0=await getResult('select pid from holes where pid=? limit 1',[id])
     if(result0!==400&&result0!==500&&result0.length===1){
-        const result1=await getResult('update holes set tag=?,reply=?,likenum=? where pid=?',[data.tag,Number(data.reply),Number(data.likenum),id])
+        const result1=await getResult('update holes set tag=?,reply=?,likenum=? where pid=? limit 1',[data.tag,Number(data.reply),Number(data.likenum),id])
         if(result1===400||result1===500)return 500
         return 200
     }
@@ -157,7 +173,7 @@ export async function updateComment(data:CommentData){
     const cid=Number(data.cid)
     const pid=Number(data.pid)
     const timestamp=Number(data.timestamp)
-    const result0=await getResult('select cid from comments where cid=?',[cid])
+    const result0=await getResult('select cid from comments where cid=? limit 1',[cid])
     if(result0!==400&&result0!==500&&result0.length===1)return 200
     const result1=await getResult('replace into comments (`cid`,`pid`,`tag`,`timestamp`,`text`,`name`) values (?,?,?,?,?,?)',[cid,pid,data.tag,timestamp,data.text,data.name])
     const result2=await getResult('update holes set cid=?,etimestamp=?,`fulltext`=concat(`fulltext`,\'\\n\',?) where pid=? and cid<? limit 1',[cid,timestamp,data.text,pid,cid])
