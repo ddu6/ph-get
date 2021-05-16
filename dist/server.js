@@ -27,7 +27,7 @@ const server = http.createServer(async (req, res) => {
     const params = url.searchParams;
     const password0 = params.get('password');
     if (password0 === null || !passwords.includes(password0)) {
-        res.end(JSON.stringify({ status: 401 }));
+        res.end(JSON.stringify({ status: 403 }));
         return;
     }
     if (path0.startsWith('/local')) {
@@ -182,7 +182,7 @@ const server = http.createServer(async (req, res) => {
         return;
     }
     if (password0 !== password) {
-        res.end(JSON.stringify({ status: 401 }));
+        res.end(JSON.stringify({ status: 403 }));
         return;
     }
     if (path0 === '/ip') {
