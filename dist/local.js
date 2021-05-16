@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateComment = exports.updateHole = exports.emptyHole = exports.getPage = exports.getHoleFromCId = exports.getHole = exports.getOldComments = exports.getComments = exports.getComment = exports.getCIds = exports.getIds = exports.getInfo = void 0;
+exports.updateComment = exports.updateHole = exports.emptyHole = exports.getPage = exports.getHole = exports.getOldComments = exports.getComments = exports.getComment = exports.getCIds = exports.getIds = exports.getInfo = void 0;
 const fs = require("fs");
 const path = require("path");
 const https = require("https");
@@ -106,21 +106,6 @@ async function getHole(id) {
     return result[0];
 }
 exports.getHole = getHole;
-async function getHoleFromCId(cid) {
-    const result = await getResult('select * from comments where cid=? limit 1', [cid]);
-    if (result === 400 || result === 500)
-        return 500;
-    if (result.length === 0)
-        return 404;
-    const id = Number(result[0].pid);
-    const result1 = await getResult('select etimestamp,hidden,likenum,pid,reply,tag,text,timestamp,type,url from holes where pid=? limit 1', [id]);
-    if (result1 === 400 || result1 === 500)
-        return 500;
-    if (result1.length === 0)
-        return 404;
-    return result1[0];
-}
-exports.getHoleFromCId = getHoleFromCId;
 async function getPage(key, page, order, s, e) {
     const conditions = [['timestamp!=0']];
     const vals = [];

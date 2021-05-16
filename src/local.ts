@@ -87,16 +87,6 @@ export async function getHole(id:number|string){
     if(result.length===0)return 404
     return result[0]
 }
-export async function getHoleFromCId(cid:number|string){
-    const result:CommentData[]|400|500=await getResult('select * from comments where cid=? limit 1',[cid])
-    if(result===400||result===500)return 500
-    if(result.length===0)return 404
-    const id=Number(result[0].pid)
-    const result1:HoleData[]|400|500=await getResult('select etimestamp,hidden,likenum,pid,reply,tag,text,timestamp,type,url from holes where pid=? limit 1',[id])
-    if(result1===400||result1===500)return 500
-    if(result1.length===0)return 404
-    return result1[0]
-}
 export async function getPage(key:string,page:number,order:any,s:number,e:number){
     const conditions=[['timestamp!=0']]
     const vals=[]
