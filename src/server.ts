@@ -81,26 +81,8 @@ const server=http.createServer(async(req,res)=>{
             res.end(JSON.stringify({status:200,data:data}))
             return
         }
-        if(path1.startsWith('/cc')){
-            const cid=Number(path1.slice(3))
-            if(isNaN(cid)){
-                res.end(JSON.stringify({status:400}))
-                return
-            }
-            if(cid>maxCId){
-                res.end(JSON.stringify({status:404}))
-                return
-            }
-            const data=await local.getComment(cid)
-            if(data===500||data===404){
-                res.end(JSON.stringify({status:data}))
-                return
-            }
-            res.end(JSON.stringify({status:200,data:data}))
-            return
-        }
-        if(path1.startsWith('/c')){
-            const pid=Number(path1.slice(2))
+        if(path1.startsWith('/cs')){
+            const pid=Number(path1.slice(3))
             if(isNaN(pid)){
                 res.end(JSON.stringify({status:400}))
                 return
@@ -126,8 +108,8 @@ const server=http.createServer(async(req,res)=>{
             res.end(JSON.stringify({status:200,data:data}))
             return
         }
-        if(path1.startsWith('/hc')){
-            const cid=Number(path1.slice(3))
+        if(path1.startsWith('/c')){
+            const cid=Number(path1.slice(2))
             if(isNaN(cid)){
                 res.end(JSON.stringify({status:400}))
                 return
@@ -136,7 +118,7 @@ const server=http.createServer(async(req,res)=>{
                 res.end(JSON.stringify({status:404}))
                 return
             }
-            const data=await local.getHoleFromCId(cid)
+            const data=await local.getComment(cid)
             if(data===500||data===404){
                 res.end(JSON.stringify({status:data}))
                 return
@@ -214,8 +196,8 @@ const server=http.createServer(async(req,res)=>{
         res.end(JSON.stringify({status:401}))
         return
     }
-    if(path0.startsWith('/c')){
-        const pid=Number(path0.slice(2))
+    if(path0.startsWith('/cs')){
+        const pid=Number(path0.slice(3))
         if(isNaN(pid)){
             res.end(JSON.stringify({status:400}))
             return
