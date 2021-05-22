@@ -222,16 +222,10 @@ const server = http.createServer(async (req, res) => {
             }
         }
         if (params.has('update')) {
-            const result = await local.getHole(pid);
-            if (typeof result !== 'number' && Number(result.timestamp) !== 0) {
-                for (let i = 0; i < data.length; i++) {
-                    const item = data[i];
-                    const result = await local.updateComment(item);
-                    if (result !== 200) {
-                        res.end(JSON.stringify({ status: result }));
-                        return;
-                    }
-                }
+            const result = await local.updateComments(pid, data);
+            if (result !== 200) {
+                res.end(JSON.stringify({ status: result }));
+                return;
             }
         }
         res.end(JSON.stringify({ status: 200, data: data }));

@@ -88,14 +88,14 @@ export async function getHole(id:number|string){
     return result[0]
 }
 export async function getPage(key:string,page:number,order:any,s:number,e:number){
-    const conditions=[['timestamp!=0']]
     const vals=[]
+    const conditions=[['timestamp!=0']]
     if(!isNaN(s)&&s>0){
-        conditions[0].push(`${order==='active'?'e':''}timestamp>=?`)
+        conditions[0].push(`${order==='liveness'?'e':''}timestamp>=?`)
         vals.push(s)
     }
     if(!isNaN(e)&&e>0){
-        conditions[0].push(`${order==='active'?'e':''}timestamp<=?`)
+        conditions[0].push(`${order==='liveness'?'e':''}timestamp<=?`)
         vals.push(e)
     }
     key=key.trim()
@@ -103,9 +103,26 @@ export async function getPage(key:string,page:number,order:any,s:number,e:number
         conditions[0].push('match(`fulltext`) against (? in boolean mode)')
         vals.push(key)
     }
-    const conditionStr=conditions.map(val=>val.join(' and ')).join(' or ')
+    let conditionStr=conditions.map(val=>val.join(' and ')).join(' or ')
+    if(conditionStr.length>0){
+        conditionStr='where '+conditionStr
+    }
+    const orders:string[]=[]
+    if(order==='heat'){
+        orders.push('reply desc','likenum desc','pid desc')
+    }else if(order==='liveness'){
+        orders.push('etimestamp desc','cid desc')
+    }else if(order==='span'){
+        orders.push('span desc','pid desc')
+    }else{
+        orders.push('pid desc')
+    }
+    let orderStr=orders.join(',')
+    if(orderStr.length>0){
+        orderStr='order by '+orderStr
+    }
     vals.push((page-1)*50)
-    const result:HoleData[]|400|500=await getResult(`select etimestamp,hidden,likenum,pid,reply,tag,text,timestamp,type,url from holes ${conditionStr.length>0?'where ':''}${conditionStr} order by ${order==='hot'?'reply desc,likenum desc,':''}${order==='active'?'etimestamp desc,cid desc,':''}pid desc limit ?,50`,vals)
+    const result:HoleData[]|400|500=await getResult(`select etimestamp,hidden,likenum,pid,reply,tag,text,timestamp,type,url from holes ${conditionStr} ${orderStr} limit ?,50`,vals)
     if(result===400||result===500)return 500
     return result
 }
@@ -117,7 +134,7 @@ export async function emptyHole(id:number|string){
     const result1=await getResult('select hidden from holes where pid=? limit 1',[id])
     if(result1===400||result1===500)return 500
     if(result1.length===0){
-        const result2=await getResult('insert into holes (`pid`,`tag`,`timestamp`,`reply`,`likenum`,`text`,`type`,`url`,`etimestamp`,`hidden`,`fulltext`) values (?,?,?,?,?,?,?,?,?,?,?)',[id,'',0,0,0,'','text','',0,1,id+'\n'])
+        const result2=await getResult('insert into holes (`pid`,`hidden`,`timestamp`,`etimestamp`,`text`,`fulltext`) values (?,?,?,?,?,?)',[id,1,0,0,'',id+'\n'])
         if(result2===400||result2===500)return 500
         return 200
     }
@@ -155,19 +172,34 @@ export async function updateHole(data:HoleData){
     if(result1===400||result1===500)return 500
     return 200
 }
-export async function updateComment(data:CommentData){
+async function updateComment(data:CommentData,timestamp:number){
     if(typeof data.tag!=='string')data.tag=''
     if(typeof data.text!=='string')data.text=''
     if(typeof data.name!=='string')data.name=''
     if(data.text.startsWith('[Helper]'))return 423
     const cid=Number(data.cid)
     const pid=Number(data.pid)
-    const timestamp=Number(data.timestamp)
+    const etimestamp=Number(data.timestamp)
+    const span=Math.max(0,etimestamp-timestamp)
     const result0=await getResult('select cid from comments where cid=? limit 1',[cid])
     if(result0!==400&&result0!==500&&result0.length===1)return 200
-    const result1=await getResult('replace into comments (`cid`,`pid`,`tag`,`timestamp`,`text`,`name`) values (?,?,?,?,?,?)',[cid,pid,data.tag,timestamp,data.text,data.name])
-    const result2=await getResult('update holes set cid=?,etimestamp=?,`fulltext`=concat(`fulltext`,\'\\n\',?) where pid=? and cid<? limit 1',[cid,timestamp,data.text,pid,cid])
+    const result1=await getResult('replace into comments (`cid`,`pid`,`tag`,`timestamp`,`text`,`name`) values (?,?,?,?,?,?)',[cid,pid,data.tag,etimestamp,data.text,data.name])
+    const result2=await getResult('update holes set cid=?,etimestamp=?,span=?,`fulltext`=concat(`fulltext`,\'\\n\',?) where pid=? and cid<? limit 1',[cid,etimestamp,span,data.text,pid,cid])
     if(result1===400||result1===500||result2===400||result2===500)return 500
+    return 200
+}
+export async function updateComments(id:number|string,data:CommentData[]){
+    const result=await getHole(id)
+    if(typeof result!=='number'){
+        const timestamp=Number(result.timestamp)
+        if(timestamp!==0){
+            for(let i=0;i<data.length;i++){
+                const item=data[i]
+                const result=await updateComment(item,timestamp)
+                if(result!==200)return result
+            }
+        }
+    }
     return 200
 }
 async function updateFile(path0:string,url:string){

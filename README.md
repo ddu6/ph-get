@@ -30,7 +30,10 @@ CREATE TABLE `holes` (
   KEY `heat` (`reply`,`likenum`),
   KEY `liveness` (`etimestamp`,`cid`),
   KEY `span` (`span`),
+  KEY `theat` (`timestamp`,`reply`,`likenum`),
   KEY `timestamp` (`timestamp`),
+  KEY `tliveness` (`timestamp`,`etimestamp`,`cid`),
+  KEY `tspan` (`timestamp`,`span`),
   FULLTEXT KEY `fulltext` (`fulltext`) /*!50100 WITH PARSER `ngram` */
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 ```
