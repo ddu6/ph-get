@@ -20,14 +20,16 @@ CREATE TABLE `holes` (
   `likenum` int NOT NULL DEFAULT '0',
   `pid` int unsigned NOT NULL,
   `reply` int unsigned NOT NULL DEFAULT '0',
+  `span` bigint unsigned NOT NULL DEFAULT '0',
   `tag` varchar(100) NOT NULL DEFAULT '',
   `text` mediumtext NOT NULL,
   `timestamp` bigint unsigned NOT NULL,
   `type` varchar(10) NOT NULL DEFAULT 'text',
   `url` varchar(100) NOT NULL DEFAULT '',
   PRIMARY KEY (`pid`),
-  KEY `active` (`etimestamp`,`cid`),
-  KEY `hot` (`reply`,`likenum`),
+  KEY `heat` (`reply`,`likenum`),
+  KEY `liveness` (`etimestamp`,`cid`),
+  KEY `span` (`span`),
   KEY `timestamp` (`timestamp`),
   FULLTEXT KEY `fulltext` (`fulltext`) /*!50100 WITH PARSER `ngram` */
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
