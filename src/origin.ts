@@ -2,7 +2,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import * as https from 'https'
 import * as http from 'http'
-import {semilog} from './mod'
+import {log} from './mod'
 import {config} from './init'
 Object.assign(config,JSON.parse(fs.readFileSync(path.join(__dirname,'../config.json'),{encoding:'utf8'})))
 interface Res{
@@ -65,8 +65,10 @@ async function basicallyGet(url:string,params:Record<string,string>={},form:Reco
     if(proxies.length>0){
         const i=Math.min(Math.floor(Math.random()*proxies.length),proxies.length-1)
         const proxy=proxies[i]
-        options.path=url
-        url=proxy
+        if(proxy!=='http://xx.xx.xx.xx:3128/'){
+            options.path=url
+            url=proxy
+        }
     }
     const result=await new Promise((resolve:(val:number|Res)=>void)=>{
         setTimeout(()=>{
@@ -110,11 +112,11 @@ async function basicallyGet(url:string,params:Record<string,string>={},form:Reco
                 })
             })
             res.on('error',err=>{
-                semilog(err)
+                log(err)
                 resolve(500)
             })
         }).on('error',err=>{
-            semilog(err)
+            log(err)
             resolve(500)
         })
         if(formStr.length>0){
@@ -138,10 +140,10 @@ async function getResult(params:Record<string,string>={},form:Record<string,stri
         if(code===0)return {data:data}
         if(msg==='没有这条树洞')return 404
         if(typeof msg==='string'&&msg.length>0){
-            semilog(msg)
+            log(msg)
         }
     }catch(err){
-        semilog(err)
+        log(err)
     }
     return 500
 }

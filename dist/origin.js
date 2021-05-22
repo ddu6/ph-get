@@ -42,8 +42,10 @@ async function basicallyGet(url, params = {}, form = {}, cookie = '', referer = 
     if (proxies.length > 0) {
         const i = Math.min(Math.floor(Math.random() * proxies.length), proxies.length - 1);
         const proxy = proxies[i];
-        options.path = url;
-        url = proxy;
+        if (proxy !== 'http://xx.xx.xx.xx:3128/') {
+            options.path = url;
+            url = proxy;
+        }
     }
     const result = await new Promise((resolve) => {
         setTimeout(() => {
@@ -89,11 +91,11 @@ async function basicallyGet(url, params = {}, form = {}, cookie = '', referer = 
                 });
             });
             res.on('error', err => {
-                mod_1.semilog(err);
+                mod_1.log(err);
                 resolve(500);
             });
         }).on('error', err => {
-            mod_1.semilog(err);
+            mod_1.log(err);
             resolve(500);
         });
         if (formStr.length > 0) {
@@ -121,11 +123,11 @@ async function getResult(params = {}, form = {}) {
         if (msg === '没有这条树洞')
             return 404;
         if (typeof msg === 'string' && msg.length > 0) {
-            mod_1.semilog(msg);
+            mod_1.log(msg);
         }
     }
     catch (err) {
-        mod_1.semilog(err);
+        mod_1.log(err);
     }
     return 500;
 }

@@ -26,13 +26,13 @@ async function getResult(sen, vals) {
     const result = await new Promise((resolve) => {
         pool.getConnection((err, con) => {
             if (err) {
-                mod_1.semilog(err);
+                mod_1.log(err);
                 resolve(500);
                 return;
             }
             con.query(sen, vals, (err, result) => {
                 if (err) {
-                    mod_1.semilog(err);
+                    mod_1.log(err);
                     resolve(400);
                     return;
                 }
@@ -229,7 +229,7 @@ async function updateFile(path0, url) {
                 return;
             }
             res.on('error', err => {
-                mod_1.semilog(err);
+                mod_1.log(err);
                 resolve(500);
             });
             let stream;
@@ -237,12 +237,12 @@ async function updateFile(path0, url) {
                 stream = fs.createWriteStream(path0);
             }
             catch (err) {
-                mod_1.semilog(err);
+                mod_1.log(err);
                 resolve(500);
                 return;
             }
             stream.on('error', err => {
-                mod_1.semilog(err);
+                mod_1.log(err);
                 resolve(500);
             });
             res.on('end', () => {

@@ -4,7 +4,7 @@ import * as https from 'https'
 import * as mysql from 'mysql'
 import {HoleData,CommentData} from './origin'
 import {config} from './init'
-import { semilog } from './mod'
+import { log } from './mod'
 Object.assign(config,JSON.parse(fs.readFileSync(path.join(__dirname,'../config.json'),{encoding:'utf8'})))
 const config0:mysql.PoolConfig=config.mysql
 const config1:mysql.PoolConfig={
@@ -24,13 +24,13 @@ async function getResult(sen:string,vals:(string|number)[]){
     const result=await new Promise((resolve:(val:any[]|400|500)=>void)=>{
         pool.getConnection((err,con)=>{
             if(err){
-                semilog(err)
+                log(err)
                 resolve(500)
                 return
             }
             con.query(sen,vals,(err,result)=>{
                 if(err){
-                    semilog(err)
+                    log(err)
                     resolve(400)
                     return
                 }
@@ -183,19 +183,19 @@ async function updateFile(path0:string,url:string){
                 return
             }
             res.on('error',err=>{
-                semilog(err)
+                log(err)
                 resolve(500)
             })
             let stream
             try{
                 stream=fs.createWriteStream(path0)
             }catch(err){
-                semilog(err)
+                log(err)
                 resolve(500)
                 return
             }
             stream.on('error',err=>{
-                semilog(err)
+                log(err)
                 resolve(500)
             })
             res.on('end',()=>{
