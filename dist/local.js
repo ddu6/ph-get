@@ -176,6 +176,9 @@ async function emptyHole(id) {
 }
 exports.emptyHole = emptyHole;
 async function updateHole(data) {
+    if (data.text === '为保障树洞信息安全, 请前往树洞网页版进行人机验证, pkuhelper.pku.edu.cn/hole') {
+        return 400;
+    }
     if (typeof data.tag !== 'string')
         data.tag = '';
     if (typeof data.text !== 'string')
@@ -190,13 +193,8 @@ async function updateHole(data) {
         if (init_1.config.archive)
             await updateAudio(data.url);
     }
-    else {
-        if (data.text === '为保障树洞信息安全, 请前往树洞网页版进行人机验证, pkuhelper.pku.edu.cn/hole') {
-            return 400;
-        }
-        if (typeof data.type !== 'string') {
-            data.type = 'text';
-        }
+    else if (data.type !== 'text') {
+        data.type = 'text';
     }
     const id = Number(data.pid);
     const timestamp = Number(data.timestamp);

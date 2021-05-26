@@ -145,6 +145,9 @@ export async function emptyHole(id:number|string){
     return 200
 }
 export async function updateHole(data:HoleData){
+    if(data.text==='为保障树洞信息安全, 请前往树洞网页版进行人机验证, pkuhelper.pku.edu.cn/hole'){
+        return 400
+    }
     if(typeof data.tag!=='string')data.tag=''
     if(typeof data.text!=='string')data.text=''
     if(typeof data.url!=='string')data.url=''
@@ -152,13 +155,8 @@ export async function updateHole(data:HoleData){
         if(config.archive)await updateImg(data.url)
     }else if(data.type==='audio'){
         if(config.archive)await updateAudio(data.url)
-    }else{
-        if(data.text==='为保障树洞信息安全, 请前往树洞网页版进行人机验证, pkuhelper.pku.edu.cn/hole'){
-            return 400
-        }
-        if(typeof data.type!=='string'){
-            data.type='text'
-        }
+    }else if(data.type!=='text'){
+        data.type='text'
     }
     const id=Number(data.pid)
     const timestamp=Number(data.timestamp)
