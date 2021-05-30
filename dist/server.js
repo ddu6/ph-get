@@ -14,7 +14,7 @@ const passwords = init_1.config.passwords;
 if (passwords.length === 0)
     throw new Error('Please fill in passwords in config.json.');
 const password = passwords[0];
-const tokenToExpirationTime = {};
+const tokenToInfo = {};
 const server = http.createServer(async (req, res) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Content-Type", "application/json;charset=utf-8");
@@ -37,14 +37,17 @@ const server = http.createServer(async (req, res) => {
             return;
         }
         const now = Math.floor(Date.now() / 1000);
-        const expirationTime = tokenToExpirationTime[token];
-        if (expirationTime === undefined || expirationTime < now) {
+        const info = tokenToInfo[token] ?? (tokenToInfo[token] = {
+            expirationTime: 0,
+            searching: false,
+        });
+        if (info.expirationTime < now) {
             const result = await origin.getHole(maxId, token);
             if (typeof result === 'number') {
                 res.end(JSON.stringify({ status: 401 }));
                 return;
             }
-            tokenToExpirationTime[token] = now + 2592000;
+            info.expirationTime = now + 2592000;
         }
         const path1 = path0.slice(6);
         if (path1 === '/info') {
@@ -167,10 +170,20 @@ const server = http.createServer(async (req, res) => {
             if (typeof key !== 'string') {
                 key = '';
             }
+            if (key.length > 0) {
+                if (info.searching) {
+                    res.end(JSON.stringify({ status: 503 }));
+                    return;
+                }
+                info.searching = true;
+            }
             const order = params.get('order');
             const s = Number(params.get('s'));
             const e = Number(params.get('e'));
             const data = await local.getPage(key, page, order, s, e);
+            if (key.length > 0) {
+                info.searching = false;
+            }
             if (data === 500) {
                 res.end(JSON.stringify({ status: 500 }));
                 return;
